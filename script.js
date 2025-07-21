@@ -423,7 +423,7 @@ navChart = new Chart(chartCtx, {
 async function fetchLatestNAVFromAMFI(fundKey) {
   try {
     // Using CORS proxy since AMFI doesn't have CORS enabled
-    const proxyUrl = "https://cors-anywhere.herokuapp.com/";
+    const proxyUrl = "https://corsproxy.io/?";
     const amfiUrl = "https://www.amfiindia.com/spages/NAVOpen.txt";
     const response = await fetch(proxyUrl + amfiUrl);
     if (!response.ok) throw new Error("Network response not ok");
