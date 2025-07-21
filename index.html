@@ -8,8 +8,15 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <div class="container">
+  <div id="loginScreen" class="login-box">
+    <h2>🔒 Login</h2>
+    <input type="text" id="loginUsername" placeholder="Username" />
+    <input type="password" id="loginPassword" placeholder="Password" />
+    <div id="loginError" class="error"></div>
+    <button onclick="handleLogin()">Login</button>
+  </div>
 
+  <div class="container" style="display: none;">
     <!-- Top Tabs -->
     <div class="tabs">
       <button class="tab-button active" data-tab="totalTab">Total Portfolio</button>
