@@ -36,6 +36,20 @@ const fetchNavButtons = document.querySelectorAll('.fetch-button');
 const sipForm = document.getElementById('sipForm');
 const sipTableBody = document.querySelector('#sipTable tbody');
 
+// --- LOGIN HANDLER ---
+function handleLogin() {
+  const user = document.getElementById("loginUsername").value.trim();
+  const pass = document.getElementById("loginPassword").value;
+  const error = document.getElementById("loginError");
+
+  if (user === "tanav2003" && pass === "Ranisati2003@#$%") {
+    document.getElementById("loginScreen").style.display = "none";
+    document.querySelector(".container").style.display = "block";
+  } else {
+    error.textContent = "❌ Invalid username or password.";
+  }
+}
+
 const fundColors = {
   bandhan:      "#ffd43b",
   hdfc_balanced_advantage: "#74b9ff",
@@ -423,7 +437,7 @@ navChart = new Chart(chartCtx, {
 async function fetchLatestNAVFromAMFI(fundKey) {
   try {
     // Using CORS proxy since AMFI doesn't have CORS enabled
-    const proxyUrl = "https://corsproxy.io/?";
+    const proxyUrl = "https://cors-anywhere.herokuapp.com/";
     const amfiUrl = "https://www.amfiindia.com/spages/NAVOpen.txt";
     const response = await fetch(proxyUrl + amfiUrl);
     if (!response.ok) throw new Error("Network response not ok");
