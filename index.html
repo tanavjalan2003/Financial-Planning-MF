@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mutual Fund NAV Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Top Tabs -->
+    <div class="tabs">
+      <button class="tab-button active" data-tab="totalTab">Total Portfolio</button>
+      <button class="tab-button" data-tab="dashboardTab">Dashboard</button>
+      <button class="tab-button" data-tab="manageTab">Add Funds / Manage</button>
+      <button class="tab-button" data-tab="sipTab">SIP Planner</button>
+    </div>
+
+    <!-- Total Tab -->
+    <div id="totalTab" class="tab-content active">
+      <h1>💹 Total Portfolio</h1>
+      <div class="summary">
+        <div class="card">Invested: ₹<span id="totalInvestedAmount">0</span></div>
+        <p></p>
+        <div class="card">
+          Final Value: ₹<span id="totalFinalValue">0</span>
+          <span id="totalFinalValueChange"></span>
+          <p></p>
+        </div>
+        <div class="card">
+          Overall Gain: <span id="totalOverallGain"></span>
+          <p></p>
+        </div>
+        <div class="card">
+          Day's Gain: <span id="totalDayGain"></span>
+          <p></p>
+        </div>
+      </div>
+      <!-- FLEX CONTAINER for chart + pie on the right -->
+      <div style="display: flex; align-items: flex-start; width: 100%; gap: 30px;">
+        <div style="flex: 1 1 0%;">
+          <!-- Main total chart -->
+          <div class="chart-container">
+            <div class="chart-header">
+              <span id="totalLastUpdated" class="last-updated">Last updated on: --</span>
+            </div>
+            <canvas id="totalNavChart" height="120"></canvas>
+          </div>
+        </div>
+        <div style="flex: 0 0 320px; display: flex; flex-direction: column; align-items: center;">
+          
+          <!-- Top row: profit & loss stats (ABOVE pie chart) -->
+          <div id="profitLossStats" style="width:100%; text-align:center; margin-bottom:12px; display:flex; gap:16px; justify-content:space-between;">
+            <div>
+              <span class="stat-main" style="color:#00b894;font-size:1.2em;"><span id="numFundsProfit">0</span> of <span id="numFundsTotal">0</span> In Profit</span><br>
+              <span class="stat-sub" style="color:#333;"><span id="totalProfitAmount">0</span> <span id="totalProfitPercent">0%</span></span>
+            </div>
+            <div>
+              <span class="stat-main" style="color:#d63031;font-size:1.2em;"><span id="numFundsLoss">0</span> of <span id="numFundsTotalB">0</span> In Loss</span><br>
+              <span class="stat-sub" style="color:#333;"><span id="totalLossAmount">0</span> <span id="totalLossPercent">0%</span></span>
+            </div>
+          </div>
+          
+          <!-- Big pie chart -->
+          <canvas id="profitLossPie" width="220" height="220"></canvas>
+          <div style="text-align:center;font-size:15px; margin-top:10px;">
+            <span style="color:#00b894;">Profit:</span>
+            <span id="fundsInProfit">0</span> &nbsp; 
+            <span style="color:#d63031;">Loss:</span>
+            <span id="fundsInLoss">0</span>
+          </div>
+          
+          <!-- Highest profit/loss below the pie chart -->
+          <div id="highestProfitLossSummary" style="margin-top:12px; text-align:center; font-size:1em;">
+            <div>
+              <span style="color:#00b894;">Highest Profit:</span>
+              <span id="highestProfitName"></span>
+              <span id="highestProfitAmount"></span>
+              (<span id="highestProfitPercent"></span>)
+              <p></p>
+            </div>
+            <div>
+              <span style="color:#d63031;">Highest Loss:</span>
+              <span id="highestLossName"></span>
+              <span id="highestLossAmount"></span>
+              (<span id="highestLossPercent"></span>)
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard Tab -->
+    <div id="dashboardTab" class="tab-content">
+      <h1>📊 Mutual Fund Dashboard</h1>
+
+      <div class="controls">
+        <label for="fundSelect">Choose Fund:</label>
+        <select id="fundSelect">
+          <option value="bandhan">Bandhan Small Cap Fund Direct-Growth</option>
+          <!-- Add other funds here -->
+        </select>
+      </div>
+
+      <div class="summary">
+        <div class="card">
+          <p></p>
+          Invested: ₹<span id="investedAmount">0</span>
+          <p></p>
+        </div>
+
+        <div class="card">
+          Latest NAV: ₹<span id="latestNav">0</span>
+          <span id="navChange"></span>
+          <p></p>
+        </div>
+
+        <div class="card">
+          Day change: <span id="finalValueDayChange"></span>
+          <p></p>
+        </div>
+
+        <div class="card">
+          Final Value: ₹<span id="finalValue">0</span>
+          <span id="finalValueChange"></span>
+          <p></p>
+        </div>
+
+        <div class="card">
+          Overall Gain: <span id="dashboardOverallGain"></span>
+          <p></p>
+        </div>
+      </div>
+
+      <!-- Dashboard Chart Section -->
+      <div class="chart-container">
+        <div class="chart-header">
+          <span id="lastUpdated" class="last-updated">Last updated on: --</span>
+          <!-- Fetch all funds NAV -->
+          <button class="fetch-button" onclick="fetchAllNAVs()">
+            Fetch All NAVs
+          </button>
+        </div>
+        <canvas id="navChart" height="100"></canvas>
+      </div>
+    </div>
+    
+    <div id="sipTab" class="tab-content">
+    <h1>🗓️ SIP Planner</h1>
+    <form id="sipForm">
+      <div class="form-group">
+        <label for="sipFundSelect">Fund Name:</label>
+        <select id="sipFundSelect" required>
+          <!-- options populated dynamically -->
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="sipAmount">Amount per SIP (₹):</label>
+        <input type="number" id="sipAmount" step="0.01" required />
+      </div>
+      <div class="form-group">
+        <label for="sipStart">Start Date:</label>
+        <input type="date" id="sipStart" required />
+      </div>
+      <div class="form-group">
+        <label for="sipEnd">End Date:</label>
+        <input type="date" id="sipEnd" required />
+      </div>
+      <div class="form-group">
+        <label for="sipDay">Day of Month:</label>
+        <input type="number" id="sipDay" min="1" max="28" required />
+        <small>(Choose 1–28 for best reliability across months)</small>
+      </div>
+      <button type="submit">Add SIP</button>
+    </form>
+    <h2>Your SIPs</h2>
+    <table id="sipTable" border="1" cellspacing="0" cellpadding="6">
+      <thead>
+        <tr>
+          <th>Fund Name</th>
+          <th>Amount</th>
+          <th>From</th>
+          <th>To</th>
+          <th>Day</th>
+          <th>Remove</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+    <!-- Manage Tab -->
+    <div id="manageTab" class="tab-content">
+      <h1>➕ Add Funds / Manage Transactions</h1>
+
+      <form id="addFundsForm" autocomplete="off">
+        <div class="form-group">
+          <label for="schemeSelect">Scheme Name:</label>
+          <select id="schemeSelect" required>
+            <!-- Options populated dynamically by script.js -->
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="purchaseDate">Purchase Date:</label>
+          <input type="date" id="purchaseDate" max="" required />
+        </div>
+
+        <div class="form-group">
+          <label for="schemeCode">Scheme Code:</label>
+          <input type="text" id="schemeCode" readonly />
+        </div>
+
+        <div class="form-group">
+          <label for="purchaseNAV">Purchase NAV:</label>
+          <input type="number" id="purchaseNAV" step="0.001" readonly />
+          <small>(Auto-filled from date chosen, if not check error message)</small>
+        </div>
+
+        <div class="form-group">
+          <label for="units">Units:</label>
+          <input type="number" id="units" step="0.001" required />
+        </div>
+
+        <div class="form-group">
+          <label for="investedAmt">Invested Amount:</label>
+          <input type="number" id="investedAmt" step="0.01" readonly />
+        </div>
+
+        <button type="submit">Add Purchase</button>
+      </form>
+
+      <h2>Transaction History</h2>
+      <table id="transactionHistory" border="1" cellspacing="0" cellpadding="6">
+        <thead>
+          <tr>
+            <th>Scheme Name</th>
+            <th>Date</th>
+            <th>Units</th>
+            <th>Purchase NAV</th>
+            <th>Invested Amount</th>
+            <th>Remove</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
