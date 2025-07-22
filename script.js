@@ -696,8 +696,76 @@ function updateTotalChart() {
     finalValue = dayValue;
     latestNAV = navCount ? (navSum / navCount) : 0;
   }
-  document.getElementById('totalInvestedAmount').textContent = latestInvestedAmount.toFixed(2);
-  document.getElementById('totalFinalValue').textContent = finalValue.toFixed(2);
+  //document.getElementById('totalInvestedAmount').textContent = latestInvestedAmount.toFixed(2);
+  //document.getElementById('totalFinalValue').textContent = finalValue.toFixed(2);
+  // === LAST KNOWN VALUE LOGIC START ===
+  let lastKnownPortfolioValue = 0;
+  let lastKnownInvestedAmount = 0;
+  let previousPortfolioValue = 0;
+  for (const key in fundData) {
+    const navs = getStoredNAVs(key);
+    const txs = getTransactions(key);
+    if (!txs.length) continue;
+    const navDates = Object.keys(navs).sort();
+    if (!navDates.length) continue;
+    const lastNavDate = navDates[navDates.length - 1];
+    const nav = navs[lastNavDate];
+    const units = txs.reduce((sum, tx) => (tx.date <= lastNavDate ? sum + Number(tx.units) : sum), 0);
+    const invested = txs.reduce((sum, tx) => (tx.date <= lastNavDate ? sum + Number(tx.investedAmount) : sum), 0);
+    lastKnownPortfolioValue += nav * units;
+    lastKnownInvestedAmount += invested;
+
+    // For day’s gain: get the previous NAV date if exists
+    if (navDates.length >= 2) {
+      const prevNavDate = navDates[navDates.length - 2];
+      const prevUnits = txs.reduce((sum, tx) => (tx.date <= prevNavDate ? sum + Number(tx.units) : sum), 0);
+      previousPortfolioValue += navs[prevNavDate] * prevUnits;
+    } else {
+      // If only one NAV date, treat previous as initial invested value for this fund
+      previousPortfolioValue += invested;
+    }
+  }
+
+  document.getElementById('totalInvestedAmount').textContent = lastKnownInvestedAmount.toFixed(2);
+  document.getElementById('totalFinalValue').textContent = lastKnownPortfolioValue.toFixed(2);
+  // === LAST KNOWN VALUE LOGIC END ===
+
+  // Remove last date if not all funds have a NAV for it
+  if (allDates.length > 0) {
+    const lastDate = allDates[allDates.length - 1];
+    const hasNavForAllFunds = Object.keys(fundData).every(key => {
+      const navs = getStoredNAVs(key);
+      return navs[lastDate] !== undefined && navs[lastDate] !== null;
+    });
+    if (!hasNavForAllFunds) {
+      allDates.pop();
+      investedAmountsByDate.pop();
+      finalValuesByDate.pop();
+    }
+  }
+
+  // ---- Determine intelligent label for chart's last point ----
+  const allLastDates = [];
+  for (const key in fundData) {
+    const navs = getStoredNAVs(key);
+    const navDates = Object.keys(navs).sort();
+    if (navDates.length) allLastDates.push(navDates[navDates.length - 1]);
+  }
+  const allFundsLatestNAVDate = allLastDates.length > 0
+    ? allLastDates.reduce((a, b) => a === b ? a : null)
+    : null;
+  let lastSnapshotLabel = "Latest";
+  if (allFundsLatestNAVDate && allLastDates.every(date => date === allFundsLatestNAVDate)) {
+    lastSnapshotLabel = allFundsLatestNAVDate;
+    document.getElementById('totalLastUpdated').textContent = `Last updated on: ${allFundsLatestNAVDate}`;
+  } else {
+    document.getElementById('totalLastUpdated').textContent = `Last updated on: Latest for each fund`;
+  }
+  const chartLabels = [...allDates, lastSnapshotLabel];
+  const investedAmountsWithLatest = [...investedAmountsByDate, lastKnownInvestedAmount];
+  const finalValuesWithLatest = [...finalValuesByDate, lastKnownPortfolioValue];
+
+
   document.getElementById('totalLastUpdated').textContent =
     allDates.length ? `Last updated on: ${allDates[allDates.length - 1]}` : "Last updated on: --";
 
@@ -706,8 +774,8 @@ function updateTotalChart() {
   let percentage_change = 0;
   let arrow = '';
   let arrowClass = '';
-  if (latestInvestedAmount > 0) {
-    percentage_change = ((finalValue - latestInvestedAmount) / latestInvestedAmount) * 100;
+  if (lastKnownInvestedAmount > 0) {
+    percentage_change = ((lastKnownPortfolioValue - lastKnownInvestedAmount) / lastKnownInvestedAmount) * 100;
     if (percentage_change > 0) {
       arrow = '▲';
       arrowClass = 'final-arrow-up';
@@ -723,7 +791,7 @@ function updateTotalChart() {
   }
 
   // --- 1. Overall Gain ---
-  const overallGain = finalValue - latestInvestedAmount;
+  const overallGain = lastKnownPortfolioValue - lastKnownInvestedAmount;
   let overallArrow = '';
   let overallArrowClass = '';
   if (overallGain > 0) {
@@ -741,26 +809,20 @@ function updateTotalChart() {
 
   // --- 2. Day's Gain ---
   const totalDayGainSpan = document.getElementById('totalDayGain');
-  if (allDates.length >= 2) {
-    const latestDayValue = finalValuesByDate[finalValuesByDate.length - 1];
-    const prevDayValue = finalValuesByDate[finalValuesByDate.length - 2];
-    const dayDiff = latestDayValue - prevDayValue;
-    const dayPercent = prevDayValue !== 0 ? (dayDiff / prevDayValue) * 100 : 0;
-    let dayArrow = '';
-    let dayArrowClass = '';
-    if (dayDiff > 0) {
-      dayArrow = '▲';
-      dayArrowClass = 'final-arrow-up';
-    } else if (dayDiff < 0) {
-      dayArrow = '▼';
-      dayArrowClass = 'final-arrow-down';
-    }
-    if(totalDayGainSpan){
-      totalDayGainSpan.innerHTML =
-        `<span class="${dayArrowClass}">${(dayDiff >= 0 ? '+' : '') + dayDiff.toFixed(2)} ${dayArrow} ${dayPercent.toFixed(2)}%</span>`;
-    }
-  } else if(totalDayGainSpan) {
-    totalDayGainSpan.textContent = '';
+  const dayDiff = lastKnownPortfolioValue - previousPortfolioValue;
+  const dayPercent = previousPortfolioValue > 0 ? (dayDiff / previousPortfolioValue) * 100 : 0;
+  let dayArrow = '';
+  let dayArrowClass = '';
+  if (dayDiff > 0) {
+    dayArrow = '▲';
+    dayArrowClass = 'final-arrow-up';
+  } else if (dayDiff < 0) {
+    dayArrow = '▼';
+    dayArrowClass = 'final-arrow-down';
+  }
+  if(totalDayGainSpan){
+    totalDayGainSpan.innerHTML =
+      `<span class="${dayArrowClass}">${(dayDiff >= 0 ? '+' : '') + dayDiff.toFixed(2)} ${dayArrow} ${dayPercent.toFixed(2)}%</span>`;
   }
 
   // --- 3. Funds-in-Profit vs. Loss Pie ---
@@ -870,11 +932,11 @@ function updateTotalChart() {
   window.totalNavChart = new Chart(totalChartCtx, {
     type: 'line',
     data: {
-      labels: allDates,
+      labels: chartLabels,
       datasets: [
         {
           label: "Total Invested Amount",
-          data: investedAmountsByDate,
+          data: investedAmountsWithLatest,
           borderColor: "#2980b9",
           backgroundColor: "rgba(41, 128, 185, 0.1)",
           fill: false,
@@ -884,7 +946,7 @@ function updateTotalChart() {
         },
         {
           label: "Total Final Value",
-          data: finalValuesByDate,
+          data: finalValuesWithLatest,
           borderColor: "#74b9ff",
           backgroundColor: "rgba(116, 185, 255, 0.1)",
           fill: false,
