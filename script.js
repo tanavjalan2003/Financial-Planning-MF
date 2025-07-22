@@ -5,6 +5,7 @@ const fundData = {
   bandhan: { scheme: "Bandhan Small Cap Fund Direct-Growth", schemeCode: "147944", investedAmount: 0, totalUnits: 0 },
   hdfc_balanced_advantage: { scheme: "HDFC Balanced Advantage Fund - Growth", schemeCode: "100119", investedAmount: 0, totalUnits: 0 },
   hdfc_gold: { scheme: "HDFC Gold Fund", schemeCode: "115934", investedAmount: 0, totalUnits: 0 },
+  //hdfc_small: { scheme: "HDFC Small Cap Fund Direct- Growth", schemeCode: "130503", investedAmount: 0, totalUnits: 0 },
   icici_large_mid: { scheme: "ICICI Prudential Large & Mid Cap Fund (G)", schemeCode: "100349", investedAmount: 0, totalUnits: 0 },
   icici_multi_asset: { scheme: "ICICI Prudential Multi-Asset Fund (G)", schemeCode: "101144", investedAmount: 0, totalUnits: 0 },
   invesco_flexi_cap: { scheme: "Invesco India Flexi Cap Fund - Regular Plan (G)", schemeCode: "149766", investedAmount: 0, totalUnits: 0 },
@@ -51,9 +52,10 @@ function handleLogin() {
 }
 
 const fundColors = {
-  bandhan:      "#ffd43b",
+  bandhan: "#ffd43b",
   hdfc_balanced_advantage: "#74b9ff",
-  hdfc_gold:    "#ffe066",
+  hdfc_gold: "#ffe066",
+  //hdfc_small: #ffb6c1,
   icici_large_mid: "#fab1a0",
   icici_multi_asset: "#00b894",
   invesco_flexi_cap: "#a29bfe",
@@ -436,37 +438,56 @@ navChart = new Chart(chartCtx, {
 // Fetch latest NAV from AMFI India text file
 async function fetchLatestNAVFromAMFI(fundKey) {
   try {
-    // Using CORS proxy since AMFI doesn't have CORS enabled
     const proxyUrl = "https://cors-anywhere.herokuapp.com/";
     const amfiUrl = "https://www.amfiindia.com/spages/NAVAll.txt";
-    const response = await fetch(proxyUrl + amfiUrl);
+    const response = await fetch(proxyUrl + amfiUrl, { cache: 'no-store' });
     if (!response.ok) throw new Error("Network response not ok");
 
     const text = await response.text();
     const schemeCode = fundData[fundKey].schemeCode;
     const lines = text.split('\n');
 
-    for (const line of lines) {
-      if (line.startsWith(schemeCode + ';')) {
-        const parts = line.split(';');
-        const navValue = parseFloat(parts[4]);
-        const rawDate = parts[5].trim();
-        const navDate = new Date(rawDate).toISOString().split('T')[0];
-
-        if (isNaN(navValue)) {
-          console.warn(`Invalid NAV for ${fundKey}`);
-          return false;
-        }
-
-        const navs = getStoredNAVs(fundKey);
-        if (navs[navDate]) return false; // Already have this date NAV
-
-        storeNAV(fundKey, navDate, navValue);
-        return true;
-      }
+    // Get all lines matching schemeCode
+    const matchedLines = lines.filter(line => line.startsWith(schemeCode + ';'));
+    if (matchedLines.length === 0) {
+      console.warn(`Scheme code ${schemeCode} not found in AMFI data.`);
+      return false;
     }
-    console.warn(`Scheme code ${schemeCode} not found in AMFI data.`);
-    return false;
+
+    // Parse NAV entries with date
+    const navEntries = matchedLines.map(line => {
+      const parts = line.split(';');
+      return {
+        navValue: parseFloat(parts[4]),
+        navDateRaw: parts[5].trim(),
+        navDate: new Date(parts[5].trim())
+      };
+    }).filter(entry => !isNaN(entry.navValue)); // filter invalid NAVs
+
+    if (navEntries.length === 0) {
+      console.warn(`No valid NAV entries for scheme code ${schemeCode}.`);
+      return false;
+    }
+
+    // Sort by date descending
+    navEntries.sort((a, b) => b.navDate - a.navDate);
+
+    // Pick the latest NAV entry
+    const latestEntry = navEntries[0];
+
+    // Format date as yyyy-mm-dd
+    const navDate = latestEntry.navDate.toISOString().split('T')[0];
+
+    const navs = getStoredNAVs(fundKey);
+    if (navs[navDate]) {
+      // Already have this date NAV
+      return false;
+    }
+
+    // Store latest NAV
+    storeNAV(fundKey, navDate, latestEntry.navValue);
+    return true;
+
   } catch (err) {
     console.error("Failed to fetch NAV:", err);
     alert("Failed to fetch NAV data. Check your internet or try later.");
@@ -972,7 +993,7 @@ function updateTotalChart() {
 }
 
 // NAV History Seeder for Bandhan fund (runs once)
-(function preloadNAVHistory() {
+(function preloadBandhanNAVHistory() {
   const navSeed = {
     "2025-06-27": 46.87,
     "2025-06-30": 47.168,
@@ -989,34 +1010,10 @@ function updateTotalChart() {
     "2025-07-15": 48.009,
     "2025-07-16": 48.209,
     "2025-07-17": 48.38,
+    "2025-07-18": 48.174,
+    "2025-07-21": 48.221,
   };
   const key = NAV_STORAGE_KEY_PREFIX + "bandhan";
-  if (!localStorage.getItem(key)) {
-    localStorage.setItem(key, JSON.stringify(navSeed));
-  }
-})();
-
-(function preloadICICIMultiAssetNavHistory() {
-  const navSeed = {
-    "2025-06-25": 757.3660,
-    "2025-06-26": 761.0829,
-    "2025-06-27": 762.4816,
-    "2025-06-30": 761.0262,
-    "2025-07-01": 761.2667,
-    "2025-07-02": 760.7020,
-    "2025-07-03": 760.6503,
-    "2025-07-04": 761.3840,
-    "2025-07-07": 761.4802,
-    "2025-07-08": 762.1778,
-    "2025-07-09": 761.3281,
-    "2025-07-10": 760.4727,
-    "2025-07-11": 759.5646,
-    "2025-07-14": 759.8072,
-    "2025-07-15": 760.9146,
-    "2025-07-16": 761.7109,
-    "2025-07-17": 760.8417
-  };
-  const key = NAV_STORAGE_KEY_PREFIX + "icici_multi_asset";
   if (!localStorage.getItem(key)) {
     localStorage.setItem(key, JSON.stringify(navSeed));
   }
@@ -1041,7 +1038,9 @@ function updateTotalChart() {
     "2025-07-14": 520.433,
     "2025-07-15": 522.248,
     "2025-07-16": 522.749,
-    "2025-07-17": 521.543
+    "2025-07-17": 521.543,
+    "2025-07-18": 519.82,
+    "2025-07-21": 520.787,
   };
   const key = NAV_STORAGE_KEY_PREFIX + "hdfc_balanced_advantage";
   if (!localStorage.getItem(key)) {
@@ -1068,6 +1067,8 @@ function updateTotalChart() {
     "2025-07-15": 29.4467,
     "2025-07-16": 29.2996,
     "2025-07-17": 29.2468,
+    "2025-07-18": 29.4697,
+    "2025-07-21": 29.5943,
   };
   const key = NAV_STORAGE_KEY_PREFIX + "hdfc_gold";
   if (!localStorage.getItem(key)) {
@@ -1075,59 +1076,20 @@ function updateTotalChart() {
   }
 })();
 
-(function preloadMotilalLargeMidNavHistory() {
+/*
+(function preloadNewFundNAVHistory() {
+  // NAV data seed for new fund (example dates and NAV values)
   const navSeed = {
-    "2025-06-25": 33.5982,
-    "2025-06-26": 33.8389,
-    "2025-06-27": 34.0183,
-    "2025-06-30": 34.4672,
-    "2025-07-01": 34.3932,
-    "2025-07-02": 34.1899,
-    "2025-07-03": 34.1430,
-    "2025-07-04": 34.0123,
-    "2025-07-07": 33.8851,
-    "2025-07-08": 33.9835,
-    "2025-07-09": 34.1819,
-    "2025-07-10": 34.1885,
-    "2025-07-11": 33.8322,
-    "2025-07-14": 33.9414,
-    "2025-07-15": 34.0829,
-    "2025-07-16": 34.0347,
-    "2025-07-17": 33.9921
+    "2025-07-25": 164.000
   };
-  const key = NAV_STORAGE_KEY_PREFIX + "motilal_large_mid";
+  const key = NAV_STORAGE_KEY_PREFIX + "hdfc_small_cap"; // Replace with your fund key
   if (!localStorage.getItem(key)) {
     localStorage.setItem(key, JSON.stringify(navSeed));
   }
 })();
+*/
 
-(function preloadTataSmallCapNavHistory() {
-  const navSeed = {
-    "2025-06-25": 40.2783,
-    "2025-06-26": 40.2527,
-    "2025-06-27": 40.3944,
-    "2025-06-30": 40.6483,
-    "2025-07-01": 40.8443,
-    "2025-07-02": 40.6608,
-    "2025-07-03": 40.7537,
-    "2025-07-04": 40.8432,
-    "2025-07-07": 40.6664,
-    "2025-07-08": 40.6773,
-    "2025-07-09": 40.8413,
-    "2025-07-10": 41.0400,
-    "2025-07-11": 41.1100,
-    "2025-07-14": 41.3744,
-    "2025-07-15": 41.7042,
-    "2025-07-16": 41.9343,
-    "2025-07-17": 42.1737
-  };
-  const key = NAV_STORAGE_KEY_PREFIX + "tata_small_cap";
-  if (!localStorage.getItem(key)) {
-    localStorage.setItem(key, JSON.stringify(navSeed));
-  }
-})();
-
-(function preloadYourFundNavHistory() {
+(function preloadICICILargeMidNavHistory() {
   const navSeed = {
     "2025-06-13": 992.07,
     "2025-06-16": 998.11,
@@ -1153,9 +1115,39 @@ function updateTotalChart() {
     "2025-07-14": 1000.94,
     "2025-07-15": 1006.04,
     "2025-07-16": 1006.38,
-    "2025-07-17": 1008.43
+    "2025-07-17": 1008.43,
+    "2025-07-18": 1002.44,
+    "2025-07-21": 1006.16,
   };
   const key = NAV_STORAGE_KEY_PREFIX + "icici_large_mid";
+  if (!localStorage.getItem(key)) {
+    localStorage.setItem(key, JSON.stringify(navSeed));
+  }
+})();
+
+(function preloadICICIMultiAssetNavHistory() {
+  const navSeed = {
+    "2025-06-25": 757.3660,
+    "2025-06-26": 761.0829,
+    "2025-06-27": 762.4816,
+    "2025-06-30": 761.0262,
+    "2025-07-01": 761.2667,
+    "2025-07-02": 760.7020,
+    "2025-07-03": 760.6503,
+    "2025-07-04": 761.3840,
+    "2025-07-07": 761.4802,
+    "2025-07-08": 762.1778,
+    "2025-07-09": 761.3281,
+    "2025-07-10": 760.4727,
+    "2025-07-11": 759.5646,
+    "2025-07-14": 759.8072,
+    "2025-07-15": 760.9146,
+    "2025-07-16": 761.7109,
+    "2025-07-17": 760.8417,
+    "2025-07-18": 760.0186,
+    "2025-07-21": 761.4072,
+  };
+  const key = NAV_STORAGE_KEY_PREFIX + "icici_multi_asset";
   if (!localStorage.getItem(key)) {
     localStorage.setItem(key, JSON.stringify(navSeed));
   }
@@ -1179,9 +1171,39 @@ function updateTotalChart() {
     "2025-07-14": 19.07,
     "2025-07-15": 19.19,
     "2025-07-16": 19.21,
-    "2025-07-17": 19.18
+    "2025-07-17": 19.18,
+    "2025-07-18": 19.13,
+    "2025-07-21": 19.27,
   };
   const key = NAV_STORAGE_KEY_PREFIX + "invesco_flexi_cap";
+  if (!localStorage.getItem(key)) {
+    localStorage.setItem(key, JSON.stringify(navSeed));
+  }
+})();
+
+(function preloadMotilalLargeMidNavHistory() {
+  const navSeed = {
+    "2025-06-25": 33.5982,
+    "2025-06-26": 33.8389,
+    "2025-06-27": 34.0183,
+    "2025-06-30": 34.4672,
+    "2025-07-01": 34.3932,
+    "2025-07-02": 34.1899,
+    "2025-07-03": 34.1430,
+    "2025-07-04": 34.0123,
+    "2025-07-07": 33.8851,
+    "2025-07-08": 33.9835,
+    "2025-07-09": 34.1819,
+    "2025-07-10": 34.1885,
+    "2025-07-11": 33.8322,
+    "2025-07-14": 33.9414,
+    "2025-07-15": 34.0829,
+    "2025-07-16": 34.0347,
+    "2025-07-17": 33.9921,
+    "2025-07-18": 33.6433,
+    "2025-07-21": 34.0861,
+  };
+  const key = NAV_STORAGE_KEY_PREFIX + "motilal_large_mid";
   if (!localStorage.getItem(key)) {
     localStorage.setItem(key, JSON.stringify(navSeed));
   }
@@ -1396,9 +1418,39 @@ function updateTotalChart() {
     "2025-07-14": 102.4591,
     "2025-07-15": 103.1160,
     "2025-07-16": 103.3945,
-    "2025-07-17": 103.3994
+    "2025-07-17": 103.3994,
+    "2025-07-18": 102.8811,
+    "2025-07-21": 103.9432,
   };
   const key = NAV_STORAGE_KEY_PREFIX + "motilal_midcap";
+  if (!localStorage.getItem(key)) {
+    localStorage.setItem(key, JSON.stringify(navSeed));
+  }
+})();
+
+(function preloadTataSmallCapNavHistory() {
+  const navSeed = {
+    "2025-06-25": 40.2783,
+    "2025-06-26": 40.2527,
+    "2025-06-27": 40.3944,
+    "2025-06-30": 40.6483,
+    "2025-07-01": 40.8443,
+    "2025-07-02": 40.6608,
+    "2025-07-03": 40.7537,
+    "2025-07-04": 40.8432,
+    "2025-07-07": 40.6664,
+    "2025-07-08": 40.6773,
+    "2025-07-09": 40.8413,
+    "2025-07-10": 41.0400,
+    "2025-07-11": 41.1100,
+    "2025-07-14": 41.3744,
+    "2025-07-15": 41.7042,
+    "2025-07-16": 41.9343,
+    "2025-07-17": 42.1737,
+    "2025-07-18": 41.9684,
+    "2025-07-21": 41.9106,
+  };
+  const key = NAV_STORAGE_KEY_PREFIX + "tata_small_cap";
   if (!localStorage.getItem(key)) {
     localStorage.setItem(key, JSON.stringify(navSeed));
   }
