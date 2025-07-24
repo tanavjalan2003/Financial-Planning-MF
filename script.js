@@ -5,7 +5,7 @@ const fundData = {
   bandhan: { scheme: "Bandhan Small Cap Fund Direct-Growth", schemeCode: "147944", investedAmount: 0, totalUnits: 0 },
   hdfc_balanced_advantage: { scheme: "HDFC Balanced Advantage Fund - Growth", schemeCode: "100119", investedAmount: 0, totalUnits: 0 },
   hdfc_gold: { scheme: "HDFC Gold Fund", schemeCode: "115934", investedAmount: 0, totalUnits: 0 },
-  //hdfc_small: { scheme: "HDFC Small Cap Fund Direct- Growth", schemeCode: "130503", investedAmount: 0, totalUnits: 0 },
+  hdfc_small: { scheme: "HDFC Small Cap Fund - Growth Option", schemeCode: "130502", investedAmount: 0, totalUnits: 0 },
   icici_large_mid: { scheme: "ICICI Prudential Large & Mid Cap Fund (G)", schemeCode: "100349", investedAmount: 0, totalUnits: 0 },
   icici_multi_asset: { scheme: "ICICI Prudential Multi-Asset Fund (G)", schemeCode: "101144", investedAmount: 0, totalUnits: 0 },
   invesco_flexi_cap: { scheme: "Invesco India Flexi Cap Fund - Regular Plan (G)", schemeCode: "149766", investedAmount: 0, totalUnits: 0 },
@@ -55,7 +55,7 @@ const fundColors = {
   bandhan: "#ffd43b",
   hdfc_balanced_advantage: "#74b9ff",
   hdfc_gold: "#ffe066",
-  //hdfc_small: #ffb6c1,
+  hdfc_small: "#ffb6c1",
   icici_large_mid: "#fab1a0",
   icici_multi_asset: "#00b894",
   invesco_flexi_cap: "#a29bfe",
@@ -1076,18 +1076,16 @@ function updateTotalChart() {
   }
 })();
 
-/*
-(function preloadNewFundNAVHistory() {
+(function preloadHDCFSmallNAVHistory() {
   // NAV data seed for new fund (example dates and NAV values)
   const navSeed = {
-    "2025-07-25": 164.000
+    "2025-07-23": 143.374,
   };
-  const key = NAV_STORAGE_KEY_PREFIX + "hdfc_small_cap"; // Replace with your fund key
+  const key = NAV_STORAGE_KEY_PREFIX + "hdfc_small"; 
   if (!localStorage.getItem(key)) {
     localStorage.setItem(key, JSON.stringify(navSeed));
   }
 })();
-*/
 
 (function preloadICICILargeMidNavHistory() {
   const navSeed = {
