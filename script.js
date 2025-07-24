@@ -37,6 +37,27 @@ const fetchNavButtons = document.querySelectorAll('.fetch-button');
 const sipForm = document.getElementById('sipForm');
 const sipTableBody = document.querySelector('#sipTable tbody');
 
+async function loadNAVJsonForFund(fundKey) {
+  try {
+    const response = await fetch(`navs_${fundKey}.json`);
+    if (!response.ok) throw new Error(`Failed to fetch navs_${fundKey}.json`);
+    const navJson = await response.json();
+    localStorage.setItem(NAV_STORAGE_KEY_PREFIX + fundKey, JSON.stringify(navJson));
+    console.log(`Loaded NAV JSON for ${fundKey}`);
+  } catch (err) {
+    console.error(`Error loading NAV JSON for ${fundKey}:`, err);
+  }
+}
+
+async function loadAllNAVs() {
+  for (const fundKey in fundData) {
+    await loadNAVJsonForFund(fundKey);
+  }
+  generateSIPTransactions();  // Auto-generate SIP transactions once NAVs loaded
+  updateChart(currentFund);
+  updateTotalChart();
+}
+
 function formatIndianCurrency(amount) {
   // Formats number as Indian currency with ₹ symbol and lakhs/crores commas
   return amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -55,6 +76,10 @@ function handleLogin() {
   if (user === "tanav2003" && pass === "Ranisati2003@#$%") {
     document.getElementById("loginScreen").style.display = "none";
     document.querySelector(".container").style.display = "block";
+
+    // Load NAV JSON files and generate SIPs after successful login
+    loadAllNAVs();
+
   } else {
     error.textContent = "❌ Invalid username or password.";
   }
