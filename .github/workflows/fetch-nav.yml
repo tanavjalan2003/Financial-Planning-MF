@@ -1,0 +1,35 @@
+name: Fetch, Process NAV Data Daily
+
+on:
+  schedule:
+    - cron: '30 13 * * *'  # 6:30 AM MST (Arizona time) daily
+  workflow_dispatch:
+
+jobs:
+  fetch-process-commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Download NAVAll.txt
+        run: curl -o navData.txt https://www.amfiindia.com/spages/NAVAll.txt
+
+      - name: Run NAV parsing script
+        run: node processNavs.js
+
+      - name: Commit updated NAV JSON files
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add navs_*.json
+          git commit -m "Update parsed NAV JSON data $(date -u +'%Y-%m-%dT%H:%M:%SZ')" || echo "No changes to commit"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
