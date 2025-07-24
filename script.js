@@ -39,7 +39,11 @@ const sipTableBody = document.querySelector('#sipTable tbody');
 
 function formatIndianCurrency(amount) {
   // Formats number as Indian currency with ₹ symbol and lakhs/crores commas
-  return amount.toLocaleString('en-IN');
+  return amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatNAVValue(nav) {
+  return nav.toLocaleString('en-IN'); // No fixed decimal places, full precision
 }
 
 // --- LOGIN HANDLER ---
@@ -294,14 +298,14 @@ function updateChart(fundKey) {
   const totalUnitsByDate = dates.map(date => txs.reduce((sum, tx) => (tx.date <= date ? sum + Number(tx.units) : sum), 0));
 
   // Final values = NAV * units
-  const finalValues = dates.map((date, i) => navs[date] * totalUnitsByDate[i]);
+  const finalValues = dates.map((date, i) => Number((navs[date] * totalUnitsByDate[i]).toFixed(2)));
 
   const latestNAV = dates.length ? navs[dates[dates.length - 1]] : 0;
   const finalValue = finalValues.length ? finalValues[finalValues.length - 1] : 0;
   const latestInvestedAmount = investedAmountsByDate.length ? investedAmountsByDate[investedAmountsByDate.length - 1] : 0;
 
   investedAmountSpan.textContent = formatIndianCurrency(latestInvestedAmount);
-  latestNavSpan.textContent = formatIndianCurrency(latestNAV);
+  latestNavSpan.textContent = formatNAVValue(latestNAV);
   finalValueSpan.textContent = formatIndianCurrency(finalValue);
   lastUpdatedLabel.textContent = dates.length ? `Last updated on: ${dates[dates.length - 1]}` : "Last updated on: --";
 
@@ -328,7 +332,7 @@ function updateChart(fundKey) {
     const navPercent = prevNAV !== 0 ? (navDiff / prevNAV) * 100 : 0;
     const arrow = navDiff > 0 ? '▲' : navDiff < 0 ? '▼' : '';
     const arrowClass = navDiff > 0 ? 'final-arrow-up' : navDiff < 0 ? 'final-arrow-down' : '';
-    navChangeSpan.innerHTML = `<span class="${arrowClass}" style="margin-left:8px">${arrow} ${formatIndianCurrency(navDiff)}</span>`;
+    navChangeSpan.innerHTML = `<span class="${arrowClass}" style="margin-left:8px">${arrow} ${formatNAVValue(navDiff)}</span>`;
   } else {
     navChangeSpan.textContent = '';
   }
@@ -418,7 +422,13 @@ navChart = new Chart(chartCtx, {
         }
       },
       y: {
-        beginAtZero: false
+        beginAtZero: false,
+        ticks: {
+          // Format y-axis ticks as Indian number with 2 decimals
+          callback: function(value) {
+            return value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          }
+        }
       }
     },
     plugins: {
@@ -427,7 +437,12 @@ navChart = new Chart(chartCtx, {
       },
       tooltip: {
         mode: "index",
-        intersect: false
+        intersect: false,
+        callbacks: {
+          label: function(context) {
+            return context.dataset.label + ': ₹' + context.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          }
+        }
       }
     },
     interaction: {
@@ -531,7 +546,7 @@ function renderTransactionHistory() {
       <td>${tx.scheme}</td>
       <td>${tx.date}</td>
       <td>${Number(tx.units).toFixed(3)}</td>
-      <td>${formatIndianCurrency(Number(tx.purchaseNAV))}</td>
+      <td>${formatNAVValue(Number(tx.purchaseNAV))}</td>
       <td>${formatIndianCurrency(Number(tx.investedAmount))}</td>
       <td><button class="remove-btn" data-index="${i}">Remove</button></td>
     `;
@@ -616,7 +631,7 @@ purchaseDate.addEventListener('change', () => {
 
   const navs = getStoredNAVs(currentFund);
   if (navs[dateStr]) {
-    purchaseNAVInput.value = navs[dateStr].toFixed(3);
+    purchaseNAVInput.value = navs[dateStr];
   } else {
     alert("No NAV data available for selected date. Please pick another date.");
     purchaseNAVInput.value = '';
@@ -715,7 +730,7 @@ function updateTotalChart() {
       }
     }
     investedAmountsByDate.push(dayInvested);
-    finalValuesByDate.push(dayValue);
+    finalValuesByDate.push(Number(dayValue.toFixed(2)));
 
     latestInvestedAmount = dayInvested;
     finalValue = dayValue;
@@ -788,8 +803,8 @@ function updateTotalChart() {
   }
   const chartLabels = [...allDates, lastSnapshotLabel];
   const investedAmountsWithLatest = [...investedAmountsByDate, lastKnownInvestedAmount];
-  const finalValuesWithLatest = [...finalValuesByDate, lastKnownPortfolioValue];
-
+  const roundedLastKnownPortfolioValue = Number(lastKnownPortfolioValue.toFixed(2));
+  const finalValuesWithLatest = [...finalValuesByDate, roundedLastKnownPortfolioValue];
 
   document.getElementById('totalLastUpdated').textContent =
     allDates.length ? `Last updated on: ${allDates[allDates.length - 1]}` : "Last updated on: --";
@@ -982,14 +997,41 @@ function updateTotalChart() {
     options: {
       responsive: true,
       scales: {
-        x: { ticks: { maxRotation: 45, minRotation: 0 } },
-        y: { beginAtZero: false }
+        x: {
+          ticks: {
+            maxRotation: 45,
+            minRotation: 0
+          }
+        },
+        y: {
+          beginAtZero: false,
+          ticks: {
+            // Format y-axis ticks as Indian number with 2 decimals
+            callback: function(value) {
+              return value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+          }
+        }
       },
       plugins: {
-        legend: { position: "top" },
-        tooltip: { mode: "index", intersect: false }
+        legend: {
+          position: "top"
+        },
+        tooltip: {
+          mode: "index",
+          intersect: false,
+          callbacks: {
+            label: function(context) {
+              return context.dataset.label + ': ₹' + context.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+          }
+        }
       },
-      interaction: { mode: 'nearest', axis: 'x', intersect: false }
+      interaction: {
+        mode: 'nearest',
+        axis: 'x',
+        intersect: false
+      }
     }
   });
 }
