@@ -37,6 +37,11 @@ const fetchNavButtons = document.querySelectorAll('.fetch-button');
 const sipForm = document.getElementById('sipForm');
 const sipTableBody = document.querySelector('#sipTable tbody');
 
+function formatIndianCurrency(amount) {
+  // Formats number as Indian currency with ₹ symbol and lakhs/crores commas
+  return amount.toLocaleString('en-IN');
+}
+
 // --- LOGIN HANDLER ---
 function handleLogin() {
   const user = document.getElementById("loginUsername").value.trim();
@@ -135,7 +140,7 @@ function renderSIPTable() {
     tr.style.backgroundColor = fundColors[sip.fundKey] || "#fff";
     tr.innerHTML = `
       <td>${fundData[sip.fundKey].scheme}</td>
-      <td>₹${sip.sipAmount}</td>
+      <td>${formatIndianCurrency(sip.sipAmount)}</td>
       <td>${sip.sipStart}</td>
       <td>${sip.sipEnd}</td>
       <td>${sip.sipDay}</td>
@@ -295,9 +300,9 @@ function updateChart(fundKey) {
   const finalValue = finalValues.length ? finalValues[finalValues.length - 1] : 0;
   const latestInvestedAmount = investedAmountsByDate.length ? investedAmountsByDate[investedAmountsByDate.length - 1] : 0;
 
-  investedAmountSpan.textContent = latestInvestedAmount.toFixed(2);
-  latestNavSpan.textContent = latestNAV.toFixed(2);
-  finalValueSpan.textContent = finalValue.toFixed(2);
+  investedAmountSpan.textContent = formatIndianCurrency(latestInvestedAmount);
+  latestNavSpan.textContent = formatIndianCurrency(latestNAV);
+  finalValueSpan.textContent = formatIndianCurrency(finalValue);
   lastUpdatedLabel.textContent = dates.length ? `Last updated on: ${dates[dates.length - 1]}` : "Last updated on: --";
 
   // Calculate and show overall gain for this fund on the dashboard tab
@@ -323,7 +328,7 @@ function updateChart(fundKey) {
     const navPercent = prevNAV !== 0 ? (navDiff / prevNAV) * 100 : 0;
     const arrow = navDiff > 0 ? '▲' : navDiff < 0 ? '▼' : '';
     const arrowClass = navDiff > 0 ? 'final-arrow-up' : navDiff < 0 ? 'final-arrow-down' : '';
-    navChangeSpan.innerHTML = `<span class="${arrowClass}" style="margin-left:8px">${arrow} ${navDiff.toFixed(2)}</span>`;
+    navChangeSpan.innerHTML = `<span class="${arrowClass}" style="margin-left:8px">${arrow} ${formatIndianCurrency(navDiff)}</span>`;
   } else {
     navChangeSpan.textContent = '';
   }
@@ -342,8 +347,7 @@ function updateChart(fundKey) {
     const dayValuePercent = finalPrev !== 0 ? (dayValueDiff / finalPrev) * 100 : 0;
     const dayArrow = dayValueDiff > 0 ? '▲' : dayValueDiff < 0 ? '▼' : '';
     const dayArrowClass = dayValueDiff > 0 ? 'final-arrow-up' : dayValueDiff < 0 ? 'final-arrow-down' : '';
-    finalValueDayChangeSpan.innerHTML =
-      `${dayValueDiff.toFixed(2)} <span class="${dayArrowClass}">${dayArrow} ${dayValuePercent.toFixed(2)}%</span>`;
+    finalValueDayChangeSpan.innerHTML = `${formatIndianCurrency(dayValueDiff)} <span class="${dayArrowClass}">${dayArrow} ${dayValuePercent.toFixed(2)}%</span>`;
   } else {
     finalValueDayChangeSpan.textContent = "";
   }
@@ -527,8 +531,8 @@ function renderTransactionHistory() {
       <td>${tx.scheme}</td>
       <td>${tx.date}</td>
       <td>${Number(tx.units).toFixed(3)}</td>
-      <td>${Number(tx.purchaseNAV).toFixed(3)}</td>
-      <td>${Number(tx.investedAmount).toFixed(2)}</td>
+      <td>${formatIndianCurrency(Number(tx.purchaseNAV))}</td>
+      <td>${formatIndianCurrency(Number(tx.investedAmount))}</td>
       <td><button class="remove-btn" data-index="${i}">Remove</button></td>
     `;
     transactionHistoryBody.appendChild(tr);
@@ -747,8 +751,8 @@ function updateTotalChart() {
     }
   }
 
-  document.getElementById('totalInvestedAmount').textContent = lastKnownInvestedAmount.toFixed(2);
-  document.getElementById('totalFinalValue').textContent = lastKnownPortfolioValue.toFixed(2);
+  document.getElementById('totalInvestedAmount').textContent = formatIndianCurrency(lastKnownInvestedAmount);
+  document.getElementById('totalFinalValue').textContent = formatIndianCurrency(lastKnownPortfolioValue);
   // === LAST KNOWN VALUE LOGIC END ===
 
   // Remove last date if not all funds have a NAV for it
@@ -824,8 +828,7 @@ function updateTotalChart() {
   }
   const overallGainElem = document.getElementById('totalOverallGain');
   if (overallGainElem) {
-    overallGainElem.innerHTML =
-      `<span class="${overallArrowClass}">${overallArrow} ${(overallGain >= 0 ? '+' : '') + overallGain.toFixed(2)}</span>`;
+    overallGainElem.innerHTML = `<span style="color:#00b894;font-weight:bold;">+${formatIndianCurrency(overallGain)}</span>`;
   } 
 
   // --- 2. Day's Gain ---
@@ -842,8 +845,7 @@ function updateTotalChart() {
     dayArrowClass = 'final-arrow-down';
   }
   if(totalDayGainSpan){
-    totalDayGainSpan.innerHTML =
-      `<span class="${dayArrowClass}">${(dayDiff >= 0 ? '+' : '') + dayDiff.toFixed(2)} ${dayArrow} ${dayPercent.toFixed(2)}%</span>`;
+    totalDayGainSpan.innerHTML = `<span class="${dayArrowClass}">${(dayDiff >= 0 ? '+' : '') + formatIndianCurrency(dayDiff)} ${dayArrow} ${dayPercent.toFixed(2)}%</span>`;
   }
 
   // --- 3. Funds-in-Profit vs. Loss Pie ---
@@ -895,15 +897,15 @@ function updateTotalChart() {
   document.getElementById('numFundsLoss').textContent = numFundsLoss;
   document.getElementById('numFundsTotal').textContent = numFundsTotal;
   document.getElementById('numFundsTotalB').textContent = numFundsTotal;
-  document.getElementById('totalProfitAmount').textContent = totalProfitAmount.toLocaleString(undefined, {maximumFractionDigits: 2});
+  document.getElementById('totalProfitAmount').textContent = formatIndianCurrency(totalProfitAmount);
   document.getElementById('totalProfitPercent').innerHTML = `<span style="color:#00b894;font-weight:bold;">${(totalProfitPercent >= 0 ? "+" : "") + totalProfitPercent.toFixed(2)}%</span>`;
   document.getElementById('totalLossPercent').innerHTML = `<span style="color:#d63031;font-weight:bold;">${(totalLossPercent >= 0 ? "+" : "") + totalLossPercent.toFixed(2)}%</span>`;
-  document.getElementById('totalLossAmount').textContent = totalLossAmount.toLocaleString(undefined, {maximumFractionDigits: 2});
+  document.getElementById('totalLossAmount').textContent = formatIndianCurrency(totalLossAmount);
   document.getElementById('highestProfitName').textContent  = hiProfit ? hiProfit.name + " " : "-";
-  document.getElementById('highestProfitAmount').textContent = hiProfit ? "+" + hiProfit.gain.toLocaleString(undefined, {maximumFractionDigits: 2}) : "";
+  document.getElementById('highestProfitAmount').textContent = "+" + formatIndianCurrency(hiProfit.gain);
   document.getElementById('highestProfitPercent').textContent = hiProfit ? hiProfit.percent.toFixed(2) + "%" : "";
   document.getElementById('highestLossName').textContent = hiLoss ? hiLoss.name + " " : "-";
-  document.getElementById('highestLossAmount').textContent = hiLoss ? hiLoss.gain.toLocaleString(undefined, {maximumFractionDigits: 2}) : "";
+  document.getElementById('highestLossAmount').textContent = formatIndianCurrency(hiLoss.gain);
   document.getElementById('highestLossPercent').textContent = hiLoss ? hiLoss.percent.toFixed(2) + "%" : "";
 
   // Pie
