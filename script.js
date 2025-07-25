@@ -941,11 +941,10 @@ function updateTotalChart() {
   document.getElementById('totalProfitPercent').innerHTML = `<span style="color:#00b894;font-weight:bold;">${(totalProfitPercent >= 0 ? "+" : "") + totalProfitPercent.toFixed(2)}%</span>`;
   document.getElementById('totalLossPercent').innerHTML = `<span style="color:#d63031;font-weight:bold;">${(totalLossPercent >= 0 ? "+" : "") + totalLossPercent.toFixed(2)}%</span>`;
   document.getElementById('totalLossAmount').textContent = formatIndianCurrency(totalLossAmount);
-  
+  // Fill the HTML securely, with checks for undefined
   document.getElementById('highestProfitName').textContent  = hiProfit ? hiProfit.name + " " : "-";
   document.getElementById('highestProfitAmount').textContent = hiProfit ? "+" + formatIndianCurrency(hiProfit.gain) : "-";
   document.getElementById('highestProfitPercent').textContent = hiProfit ? hiProfit.percent.toFixed(2) + "%" : "-";
-  
   document.getElementById('highestLossName').textContent = hiLoss ? hiLoss.name + " " : "-";
   document.getElementById('highestLossAmount').textContent = hiLoss ? formatIndianCurrency(hiLoss.gain) : "-";
   document.getElementById('highestLossPercent').textContent = hiLoss ? hiLoss.percent.toFixed(2) + "%" : "-";
