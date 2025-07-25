@@ -1110,12 +1110,12 @@ window.onload = async () => {
   updateTotalChart();
 
   // Original Mode button
-  document.getElementById('originalModeBtn').addEventListener('click', () => {
-    if (totalChartMode !== 'original') {
-      totalChartMode = 'original';
+  document.getElementById('focusModeBtn').addEventListener('click', () => {
+    if (totalChartMode !== 'focus') {
+      totalChartMode = 'focus';
       updateTotalChart();
-      document.getElementById('originalModeBtn').classList.add('selected');  // <-- add here
-      document.getElementById('focusModeBtn').classList.remove('selected');  // <-- remove here
+      document.getElementById('focusModeBtn').classList.add('selected');
+      document.getElementById('originalModeBtn').classList.remove('selected');
     }
   });
   
