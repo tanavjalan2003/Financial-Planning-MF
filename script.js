@@ -53,7 +53,12 @@ async function loadAllNAVs() {
   for (const fundKey in fundData) {
     await loadNAVJsonForFund(fundKey);
   }
-  generateSIPTransactions();  // Auto-generate SIP transactions once NAVs loaded
+  // Wait for the next tick (optional but can help)
+  await new Promise(resolve => setTimeout(resolve, 0));
+
+  generateSIPTransactions();  // Still synchronous, but after all NAVs loaded
+
+  // After transactions generated, update charts
   updateChart(currentFund);
   updateTotalChart();
 }
