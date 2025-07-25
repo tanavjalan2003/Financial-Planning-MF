@@ -127,7 +127,7 @@ function populateSIPDropdown() {
 const chartCtx = document.getElementById('navChart').getContext('2d');
 let navChart;
 let currentFund = 'bandhan';
-let totalChartMode = 'original';  // default mode: full date range
+let totalChartMode = 'focus';  // default set to focus mode
 
 // --- Tabs Logic ---
 const tabs = document.querySelectorAll('.tab-button');
@@ -1106,8 +1106,8 @@ window.onload = async () => {
     if (totalChartMode !== 'original') {
       totalChartMode = 'original';
       updateTotalChart();
-      document.getElementById('originalModeBtn').classList.add('selected');
-      document.getElementById('focusModeBtn').classList.remove('selected');
+      document.getElementById('originalModeBtn').classList.remove('selected');
+      document.getElementById('focusModeBtn').classList.add('selected');
     }
   });
 
