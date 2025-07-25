@@ -752,8 +752,7 @@ function updateTotalChart() {
   const missingFunds = Object.keys(fundData).filter(key => !getStoredNAVs(key)[latestDate]);
   if (missingFunds.length > 0) {
     alert("Warning: The following funds do not have NAVs for the latest portfolio date (" + latestDate + "):\n" +
-          missingFunds.map(k => fundData[k].scheme).join("\n") +
-          "\n\nTotal Portfolio Value may be understated!");
+          missingFunds.map(k => fundData[k].scheme).join("\n"));
   }
 
   // 2. Prepare invested and value series
