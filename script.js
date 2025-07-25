@@ -326,10 +326,9 @@ function updateChart(fundKey) {
 
   const totalUnits = txs.reduce((sum, tx) => sum + Number(tx.units), 0);
 
-  // Update the dashboard Total Units span
   const dashboardTotalUnitsSpan = document.getElementById('dashboardTotalUnits');
   if (dashboardTotalUnitsSpan) {
-    dashboardTotalUnitsSpan.textContent = totalUnits.toFixed(4);  // 4 decimal places for units
+    dashboardTotalUnitsSpan.textContent = totalUnits.toFixed(4);
   }
 
   // Invested amount stepwise & total units cumulative
@@ -750,7 +749,6 @@ function updateTotalChart() {
       }
     }
     if (lastTxDate) {
-      // Filter allDates for dates >= lastTxDate
       allDates = allDates.filter(date => date >= lastTxDate);
     }
   }
@@ -1114,12 +1112,11 @@ window.onload = async () => {
     if (totalChartMode !== 'original') {
       totalChartMode = 'original';
       updateTotalChart();
-      document.getElementById('originalModeBtn').classList.add('selected');  // <-- add here
-      document.getElementById('focusModeBtn').classList.remove('selected');  // <-- remove here
+      document.getElementById('originalModeBtn').classList.add('selected');
+      document.getElementById('focusModeBtn').classList.remove('selected');
     }
   });
   
-  // Focus Mode button (looks good already)
   document.getElementById('focusModeBtn').addEventListener('click', () => {
     if (totalChartMode !== 'focus') {
       totalChartMode = 'focus';
@@ -1129,7 +1126,7 @@ window.onload = async () => {
     }
   });
   
-  // On page load, set default selected button according to mode, e.g.
+  // On page load, reflect initial mode selection visually
   if (totalChartMode === 'focus') {
     document.getElementById('originalModeBtn').classList.remove('selected');
     document.getElementById('focusModeBtn').classList.add('selected');
