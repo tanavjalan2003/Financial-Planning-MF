@@ -1,5 +1,3 @@
-// ====== processNavs.js ======
-
 const fs = require('fs');
 const path = require('path');
 
@@ -37,6 +35,7 @@ function parseNAVAllText(text) {
     const nav = parseFloat(navStr);
     if (isNaN(nav)) return;
 
+    // Convert date from dd-mm-yyyy to ISO format yyyy-mm-dd
     const [dd, mm, yyyy] = dateStrRaw.split('-');
     if (!dd || !mm || !yyyy) return;
     const dateISO = `${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
@@ -55,16 +54,35 @@ function parseNAVAllText(text) {
       process.exit(1);
     }
 
+    // Read new NAV data from the latest NAVAll.txt
     const text = fs.readFileSync(navDataPath, 'utf8');
-    const navsByFund = parseNAVAllText(text);
+    const newNavsByFund = parseNAVAllText(text);
 
-    for (const fundKey in navsByFund) {
+    for (const fundKey in newNavsByFund) {
       const fileName = `navs_${fundKey}.json`;
-      fs.writeFileSync(path.join(__dirname, fileName), JSON.stringify(navsByFund[fundKey], null, 2));
-      console.log(`Saved NAV JSON for ${fundKey}: ${fileName}`);
+      const filePath = path.join(__dirname, fileName);
+
+      // Read existing NAV JSON if exists
+      let existingNavs = {};
+      if (fs.existsSync(filePath)) {
+        try {
+          const existingData = fs.readFileSync(filePath, 'utf8');
+          existingNavs = JSON.parse(existingData);
+        } catch (err) {
+          console.warn(`Warning: Could not parse existing ${fileName}, overwriting it.`);
+          existingNavs = {};
+        }
+      }
+
+      // Merge new NAV data into existing NAVs (overwrites by date if conflict)
+      const mergedNavs = { ...existingNavs, ...newNavsByFund[fundKey] };
+
+      // Write merged data back to JSON file
+      fs.writeFileSync(filePath, JSON.stringify(mergedNavs, null, 2));
+      console.log(`Updated NAV JSON for ${fundKey}: ${fileName}`);
     }
 
-    console.log('NAV parsing and JSON files generation complete.');
+    console.log('NAV parsing and JSON files update complete.');
   } catch (err) {
     console.error('Error processing NAV data:', err);
   }
