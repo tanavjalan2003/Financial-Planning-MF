@@ -1,4 +1,4 @@
-name: Fetch, Process NAV Data Every 2 Hours
+name: Fetch, Process NAV Data Every 6 Hours
 
 on:
   schedule:
