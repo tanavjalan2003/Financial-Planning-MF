@@ -1109,31 +1109,34 @@ window.onload = async () => {
   updateChart(currentFund);
   updateTotalChart();
 
-  // Original Mode button
-  document.getElementById('focusModeBtn').addEventListener('click', () => {
+  const originalBtn = document.getElementById('originalModeBtn');
+  const focusBtn = document.getElementById('focusModeBtn');
+
+  // Add event listeners
+  originalBtn.addEventListener('click', () => {
+    if (totalChartMode !== 'original') {
+      totalChartMode = 'original';
+      updateTotalChart();
+      originalBtn.classList.add('selected');
+      focusBtn.classList.remove('selected');
+    }
+  });
+
+  focusBtn.addEventListener('click', () => {
     if (totalChartMode !== 'focus') {
       totalChartMode = 'focus';
       updateTotalChart();
-      document.getElementById('focusModeBtn').classList.add('selected');
-      document.getElementById('originalModeBtn').classList.remove('selected');
+      focusBtn.classList.add('selected');
+      originalBtn.classList.remove('selected');
     }
   });
-  
-  // Focus Mode button (looks good already)
-  document.getElementById('focusModeBtn').addEventListener('click', () => {
-    if (totalChartMode !== 'focus') {
-      totalChartMode = 'focus';
-      updateTotalChart();
-      document.getElementById('focusModeBtn').classList.add('selected');
-      document.getElementById('originalModeBtn').classList.remove('selected');
-    }
-  });
-  
-  // On page load, set default selected button according to mode, e.g.
+
+  // Set initial button selected state based on totalChartMode
   if (totalChartMode === 'focus') {
-    document.getElementById('originalModeBtn').classList.remove('selected');
-    document.getElementById('focusModeBtn').classList.add('selected');
+    originalBtn.classList.remove('selected');
+    focusBtn.classList.add('selected');
   } else {
-    document.getElementById('focusModeBtn').classList.remove('selected');
-    document.getElementById('originalModeBtn').classList.add('selected');
+    focusBtn.classList.remove('selected');
+    originalBtn.classList.add('selected');
   }
+};
