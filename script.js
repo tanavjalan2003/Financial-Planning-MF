@@ -64,7 +64,7 @@ async function loadAllNAVs() {
 }
 
 function formatIndianCurrency(amount) {
-  // Formats number as Indian currency with ₹ symbol and lakhs/crores commas
+  // Formats number as Indian currency with â‚¹ symbol and lakhs/crores commas
   return amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
@@ -86,7 +86,7 @@ function handleLogin() {
     loadAllNAVs();
 
   } else {
-    error.textContent = "❌ Invalid username or password.";
+    error.textContent = "âŒ Invalid username or password.";
   }
 }
 
@@ -326,9 +326,10 @@ function updateChart(fundKey) {
 
   const totalUnits = txs.reduce((sum, tx) => sum + Number(tx.units), 0);
 
+  // Update the dashboard Total Units span
   const dashboardTotalUnitsSpan = document.getElementById('dashboardTotalUnits');
   if (dashboardTotalUnitsSpan) {
-    dashboardTotalUnitsSpan.textContent = totalUnits.toFixed(4);
+    dashboardTotalUnitsSpan.textContent = totalUnits.toFixed(4);  // 4 decimal places for units
   }
 
   // Invested amount stepwise & total units cumulative
@@ -372,14 +373,14 @@ function updateChart(fundKey) {
     const prevNAV = navs[prevDate];
     const navDiff = latestNAV - prevNAV;
     const navPercent = prevNAV !== 0 ? (navDiff / prevNAV) * 100 : 0;
-    const arrow = navDiff > 0 ? '▲' : navDiff < 0 ? '▼' : '';
+    const arrow = navDiff > 0 ? 'â–²' : navDiff < 0 ? 'â–¼' : '';
     const arrowClass = navDiff > 0 ? 'final-arrow-up' : navDiff < 0 ? 'final-arrow-down' : '';
     navChangeSpan.innerHTML = `<span class="${arrowClass}" style="margin-left:8px">${arrow} ${formatNAVValue(navDiff)}</span>`;
   } else {
     navChangeSpan.textContent = '';
   }
 
-  // Final Value day-over-day absolute (₹) and % change, e.g. ▼ -966.88 (-0.43%)
+  // Final Value day-over-day absolute (â‚¹) and % change, e.g. â–¼ -966.88 (-0.43%)
   const finalValueDayChangeSpan = document.getElementById('finalValueDayChange');
   if (dates.length >= 2) {
     const latestDate = dates[dates.length - 1];
@@ -391,7 +392,7 @@ function updateChart(fundKey) {
     const finalLatest = navs[latestDate] * totalUnitsOnLatestDay;
     const dayValueDiff = finalLatest - finalPrev;
     const dayValuePercent = finalPrev !== 0 ? (dayValueDiff / finalPrev) * 100 : 0;
-    const dayArrow = dayValueDiff > 0 ? '▲' : dayValueDiff < 0 ? '▼' : '';
+    const dayArrow = dayValueDiff > 0 ? 'â–²' : dayValueDiff < 0 ? 'â–¼' : '';
     const dayArrowClass = dayValueDiff > 0 ? 'final-arrow-up' : dayValueDiff < 0 ? 'final-arrow-down' : '';
     finalValueDayChangeSpan.innerHTML = `${formatIndianCurrency(dayValueDiff)} <span class="${dayArrowClass}">${dayArrow} ${dayValuePercent.toFixed(2)}%</span>`;
   } else {
@@ -407,10 +408,10 @@ function updateChart(fundKey) {
   if (latestInvestedAmount > 0) {
     percentage_change = ((finalValue - latestInvestedAmount) / latestInvestedAmount) * 100;
     if (percentage_change > 0) {
-      arrow = '▲';
+      arrow = 'â–²';
       arrowClass = 'final-arrow-up';
     } else if (percentage_change < 0) {
-      arrow = '▼';
+      arrow = 'â–¼';
       arrowClass = 'final-arrow-down';
     } else {
       arrow = '';
@@ -482,7 +483,7 @@ navChart = new Chart(chartCtx, {
         intersect: false,
         callbacks: {
           label: function(context) {
-            return context.dataset.label + ': ₹' + context.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            return context.dataset.label + ': â‚¹' + context.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
           }
         }
       }
@@ -564,9 +565,9 @@ async function fetchAllNAVs() {
     if (updated) updatedFunds.push(fundData[key].scheme);
   }
   if (updatedFunds.length) {
-    alert(`✔️ Updated NAVs for: ${updatedFunds.join(', ')}`);
+    alert(`âœ”ï¸ Updated NAVs for: ${updatedFunds.join(', ')}`);
   } else {
-    alert('✅ All NAVs are up to date.');
+    alert('âœ… All NAVs are up to date.');
   }
   updateChart(currentFund);
 }
@@ -661,8 +662,8 @@ purchaseDate.addEventListener('change', () => {
   const dateStr = purchaseDate.value;
   if (!dateStr) return;
 
-  const date = parseLocalDate(dateStr);  // ✅ this is correct!
-  const day = date.getDay();             // ✅ this now works properly
+  const date = parseLocalDate(dateStr);  // âœ… this is correct!
+  const day = date.getDay();             // âœ… this now works properly
 
   if (day === 0 || day === 6) {
     alert("Market is closed on weekends. Please select a weekday.");
@@ -749,6 +750,7 @@ function updateTotalChart() {
       }
     }
     if (lastTxDate) {
+      // Filter allDates for dates >= lastTxDate
       allDates = allDates.filter(date => date >= lastTxDate);
     }
   }
@@ -812,7 +814,7 @@ function updateTotalChart() {
     lastKnownPortfolioValue += nav * units;
     lastKnownInvestedAmount += invested;
 
-    // For day’s gain: get the previous NAV date if exists
+    // For dayâ€™s gain: get the previous NAV date if exists
     if (navDates.length >= 2) {
       const prevNavDate = navDates[navDates.length - 2];
       const prevUnits = txs.reduce((sum, tx) => (tx.date <= prevNavDate ? sum + Number(tx.units) : sum), 0);
@@ -874,10 +876,10 @@ function updateTotalChart() {
   if (lastKnownInvestedAmount > 0) {
     percentage_change = ((lastKnownPortfolioValue - lastKnownInvestedAmount) / lastKnownInvestedAmount) * 100;
     if (percentage_change > 0) {
-      arrow = '▲';
+      arrow = 'â–²';
       arrowClass = 'final-arrow-up';
     } else if (percentage_change < 0) {
-      arrow = '▼';
+      arrow = 'â–¼';
       arrowClass = 'final-arrow-down';
     }
   }
@@ -892,10 +894,10 @@ function updateTotalChart() {
   let overallArrow = '';
   let overallArrowClass = '';
   if (overallGain > 0) {
-    overallArrow = '▲';
+    overallArrow = 'â–²';
     overallArrowClass = 'final-arrow-up';
   } else if (overallGain < 0) {
-    overallArrow = '▼';
+    overallArrow = 'â–¼';
     overallArrowClass = 'final-arrow-down';
   }
   const overallGainElem = document.getElementById('totalOverallGain');
@@ -910,10 +912,10 @@ function updateTotalChart() {
   let dayArrow = '';
   let dayArrowClass = '';
   if (dayDiff > 0) {
-    dayArrow = '▲';
+    dayArrow = 'â–²';
     dayArrowClass = 'final-arrow-up';
   } else if (dayDiff < 0) {
-    dayArrow = '▼';
+    dayArrow = 'â–¼';
     dayArrowClass = 'final-arrow-down';
   }
   if(totalDayGainSpan){
@@ -1007,10 +1009,10 @@ function updateTotalChart() {
         callbacks: {
           label: function(context) {
             if (context.dataIndex === 0 && fundsInProfit.length > 0) {
-              return ['Profit:', ...fundsInProfit.map(f => '• ' + f.name)];
+              return ['Profit:', ...fundsInProfit.map(f => 'â€¢ ' + f.name)];
             }
             if (context.dataIndex === 1 && fundsInLoss.length > 0) {
-              return ['Loss:', ...fundsInLoss.map(f => '• ' + f.name)];
+              return ['Loss:', ...fundsInLoss.map(f => 'â€¢ ' + f.name)];
             }
             return '';
           }
@@ -1085,7 +1087,7 @@ function updateTotalChart() {
           intersect: false,
           callbacks: {
             label: function(context) {
-              return context.dataset.label + ': ₹' + context.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+              return context.dataset.label + ': â‚¹' + context.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             }
           }
         }
@@ -1112,11 +1114,12 @@ window.onload = async () => {
     if (totalChartMode !== 'original') {
       totalChartMode = 'original';
       updateTotalChart();
-      document.getElementById('originalModeBtn').classList.add('selected');
-      document.getElementById('focusModeBtn').classList.remove('selected');
+      document.getElementById('originalModeBtn').classList.add('selected');  // <-- add here
+      document.getElementById('focusModeBtn').classList.remove('selected');  // <-- remove here
     }
   });
   
+  // Focus Mode button (looks good already)
   document.getElementById('focusModeBtn').addEventListener('click', () => {
     if (totalChartMode !== 'focus') {
       totalChartMode = 'focus';
@@ -1126,7 +1129,7 @@ window.onload = async () => {
     }
   });
   
-  // On page load, reflect initial mode selection visually
+  // On page load, set default selected button according to mode, e.g.
   if (totalChartMode === 'focus') {
     document.getElementById('originalModeBtn').classList.remove('selected');
     document.getElementById('focusModeBtn').classList.add('selected');
