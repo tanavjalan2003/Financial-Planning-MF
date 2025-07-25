@@ -1109,16 +1109,17 @@ window.onload = async () => {
   updateChart(currentFund);
   updateTotalChart();
 
-  // Mode toggle button event listeners (same as snippet above)
+  // Original Mode button
   document.getElementById('originalModeBtn').addEventListener('click', () => {
     if (totalChartMode !== 'original') {
       totalChartMode = 'original';
       updateTotalChart();
-      document.getElementById('originalModeBtn').classList.remove('selected');
-      document.getElementById('focusModeBtn').classList.add('selected');
+      document.getElementById('originalModeBtn').classList.add('selected');  // <-- add here
+      document.getElementById('focusModeBtn').classList.remove('selected');  // <-- remove here
     }
   });
-
+  
+  // Focus Mode button (looks good already)
   document.getElementById('focusModeBtn').addEventListener('click', () => {
     if (totalChartMode !== 'focus') {
       totalChartMode = 'focus';
@@ -1127,7 +1128,12 @@ window.onload = async () => {
       document.getElementById('originalModeBtn').classList.remove('selected');
     }
   });
-
-  // Set default selected button UI state
-  document.getElementById('originalModeBtn').classList.add('selected');
-};
+  
+  // On page load, set default selected button according to mode, e.g.
+  if (totalChartMode === 'focus') {
+    document.getElementById('originalModeBtn').classList.remove('selected');
+    document.getElementById('focusModeBtn').classList.add('selected');
+  } else {
+    document.getElementById('focusModeBtn').classList.remove('selected');
+    document.getElementById('originalModeBtn').classList.add('selected');
+  }
