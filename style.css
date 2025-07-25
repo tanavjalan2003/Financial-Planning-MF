@@ -225,10 +225,11 @@ body {
   border-radius: 5px;
   font-weight: bold;
   transition: background-color 0.2s ease;
+  font-size: 0.9em;
+  white-space: nowrap;
 }
 
 .mode-btn.selected, .mode-btn:hover {
   background-color: #2980b9;
   color: white;
 }
-
