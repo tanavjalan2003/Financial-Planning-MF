@@ -14,6 +14,22 @@ const fundData = {
   tata_small_cap: "145208"
 };
 
+// Map for converting month abbreviations to two-digit month numbers
+const monthMap = {
+  Jan: '01',
+  Feb: '02',
+  Mar: '03',
+  Apr: '04',
+  May: '05',
+  Jun: '06',
+  Jul: '07',
+  Aug: '08',
+  Sep: '09',
+  Oct: '10',
+  Nov: '11',
+  Dec: '12'
+};
+
 function parseNAVAllText(text) {
   const lines = text.split('\n');
   const navsByFund = {};
@@ -35,10 +51,14 @@ function parseNAVAllText(text) {
     const nav = parseFloat(navStr);
     if (isNaN(nav)) return;
 
-    // Convert date from dd-mm-yyyy to ISO format yyyy-mm-dd
-    const [dd, mm, yyyy] = dateStrRaw.split('-');
-    if (!dd || !mm || !yyyy) return;
-    const dateISO = `${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
+    // Parse a date string of format "dd-MMM-yyyy" or "dd-mm-yyyy"
+    const [dd, mmRaw, yyyy] = dateStrRaw.split('-');
+    if (!dd || !mmRaw || !yyyy) return;
+
+    // Convert month abbreviation (e.g., "Jul") to month number or keep numeric month as is
+    const mm = monthMap[mmRaw] || mmRaw.padStart(2, '0');
+
+    const dateISO = `${yyyy}-${mm}-${dd.padStart(2,'0')}`;
 
     navsByFund[fundKey][dateISO] = nav;
   });
