@@ -329,6 +329,10 @@ function updateChart(fundKey) {
 
   // Final values = NAV * units
   const finalValues = dates.map((date, i) => Number((navs[date] * totalUnitsByDate[i]).toFixed(2)));
+  console.log('updateChart for', currentFund);
+  console.log('Dates:', dates);
+  console.log('Invested Amounts:', investedAmountsByDate);
+  console.log('Final Values:', finalValues);
 
   const latestNAV = dates.length ? navs[dates[dates.length - 1]] : 0;
   const finalValue = finalValues.length ? finalValues[finalValues.length - 1] : 0;
@@ -993,6 +997,11 @@ function updateTotalChart() {
   }
 });
 
+  console.log('updateTotalChart');
+  console.log('Chart labels:', chartLabels);
+  console.log('Invested amounts with latest:', investedAmountsWithLatest);
+  console.log('Final values with latest:', finalValuesWithLatest);
+  
   // Draw chart
   if (window.totalNavChart && typeof window.totalNavChart.destroy === "function") {
     window.totalNavChart.destroy();
