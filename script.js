@@ -127,6 +127,7 @@ function populateSIPDropdown() {
 const chartCtx = document.getElementById('navChart').getContext('2d');
 let navChart;
 let currentFund = 'bandhan';
+let totalChartMode = 'original';  // default mode: full date range
 
 // --- Tabs Logic ---
 const tabs = document.querySelectorAll('.tab-button');
@@ -727,7 +728,24 @@ function updateTotalChart() {
   for (const key in fundData) {
     Object.keys(getStoredNAVs(key)).forEach(date => allDatesSet.add(date));
   }
-  const allDates = Array.from(allDatesSet).sort();
+  
+  let allDates = Array.from(allDatesSet).sort();
+  
+  if (totalChartMode === 'focus') {
+    // Find latest transaction date across all funds
+    let lastTxDate = null;
+    for (const key in fundData) {
+      const txs = getTransactions(key);
+      if (txs.length) {
+        const latestTx = txs.reduce((a, b) => (a.date > b.date ? a : b));
+        if (!lastTxDate || latestTx.date > lastTxDate) lastTxDate = latestTx.date;
+      }
+    }
+    if (lastTxDate) {
+      // Filter allDates for dates >= lastTxDate
+      allDates = allDates.filter(date => date >= lastTxDate);
+    }
+  }
 
   // After allDates and before doing calculations:
   const latestDate = allDates[allDates.length - 1];
@@ -1081,5 +1099,28 @@ window.onload = async () => {
   populateDropdowns();
   populateSIPDropdown();
   generateSIPTransactions();
+  updateChart(currentFund);
   updateTotalChart();
+
+  // Mode toggle button event listeners (same as snippet above)
+  document.getElementById('originalModeBtn').addEventListener('click', () => {
+    if (totalChartMode !== 'original') {
+      totalChartMode = 'original';
+      updateTotalChart();
+      document.getElementById('originalModeBtn').classList.add('selected');
+      document.getElementById('focusModeBtn').classList.remove('selected');
+    }
+  });
+
+  document.getElementById('focusModeBtn').addEventListener('click', () => {
+    if (totalChartMode !== 'focus') {
+      totalChartMode = 'focus';
+      updateTotalChart();
+      document.getElementById('focusModeBtn').classList.add('selected');
+      document.getElementById('originalModeBtn').classList.remove('selected');
+    }
+  });
+
+  // Set default selected button UI state
+  document.getElementById('originalModeBtn').classList.add('selected');
 };
