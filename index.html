@@ -54,15 +54,15 @@
             <div class="chart-header">
               <span id="totalLastUpdated" class="last-updated">Last updated on: --</span>
             </div>
+            <div id="totalChartModeButtons" style="position: absolute; top: 8px; right: 8px; display: flex; gap: 8px; z-index: 10;">
+              <button id="originalModeBtn" class="mode-btn selected">Original Mode</button>
+              <button id="focusModeBtn" class="mode-btn">Focus Mode</button>
+            </div>
             <canvas id="totalNavChart" height="120"></canvas>
           </div>
         </div>
         <div style="flex: 0 0 320px; display: flex; flex-direction: column; align-items: center;">
           <!-- Mode toggle buttons container -->
-        <div id="totalChartModeButtons" style="position: absolute; top: 8px; right: 8px; display: flex; gap: 8px; z-index: 10;">
-          <button id="originalModeBtn" class="mode-btn selected">Original Mode</button>
-          <button id="focusModeBtn" class="mode-btn">Focus Mode</button>
-        </div>
           
           <!-- Top row: profit & loss stats (ABOVE pie chart) -->
           <div id="profitLossStats" style="width:100%; text-align:center; margin-bottom:12px; display:flex; gap:16px; justify-content:space-between;">
