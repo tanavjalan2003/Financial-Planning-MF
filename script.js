@@ -324,6 +324,14 @@ function updateChart(fundKey) {
 
   const txs = getTransactions(fundKey).slice().sort((a,b) => new Date(a.date) - new Date(b.date));
 
+  const totalUnits = txs.reduce((sum, tx) => sum + Number(tx.units), 0);
+
+  // Update the dashboard Total Units span
+  const dashboardTotalUnitsSpan = document.getElementById('dashboardTotalUnits');
+  if (dashboardTotalUnitsSpan) {
+    dashboardTotalUnitsSpan.textContent = totalUnits.toFixed(4);  // 4 decimal places for units
+  }
+
   // Invested amount stepwise & total units cumulative
   const investedAmountsByDate = dates.map(date => txs.reduce((sum, tx) => (tx.date <= date ? sum + Number(tx.investedAmount) : sum), 0));
   const totalUnitsByDate = dates.map(date => txs.reduce((sum, tx) => (tx.date <= date ? sum + Number(tx.units) : sum), 0));
