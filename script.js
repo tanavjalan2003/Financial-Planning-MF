@@ -373,14 +373,14 @@ function updateChart(fundKey) {
     const prevNAV = navs[prevDate];
     const navDiff = latestNAV - prevNAV;
     const navPercent = prevNAV !== 0 ? (navDiff / prevNAV) * 100 : 0;
-    const arrow = navDiff > 0 ? 'â–²' : navDiff < 0 ? 'â–¼' : '';
+    const arrow = navDiff > 0 ? '▲' : navDiff < 0 ? '▼' : '';
     const arrowClass = navDiff > 0 ? 'final-arrow-up' : navDiff < 0 ? 'final-arrow-down' : '';
     navChangeSpan.innerHTML = `<span class="${arrowClass}" style="margin-left:8px">${arrow} ${formatNAVValue(navDiff)}</span>`;
   } else {
     navChangeSpan.textContent = '';
   }
 
-  // Final Value day-over-day absolute (â‚¹) and % change, e.g. â–¼ -966.88 (-0.43%)
+  // Final Value day-over-day absolute (â‚¹) and % change, e.g. ▼ -966.88 (-0.43%)
   const finalValueDayChangeSpan = document.getElementById('finalValueDayChange');
   if (dates.length >= 2) {
     const latestDate = dates[dates.length - 1];
@@ -392,7 +392,7 @@ function updateChart(fundKey) {
     const finalLatest = navs[latestDate] * totalUnitsOnLatestDay;
     const dayValueDiff = finalLatest - finalPrev;
     const dayValuePercent = finalPrev !== 0 ? (dayValueDiff / finalPrev) * 100 : 0;
-    const dayArrow = dayValueDiff > 0 ? 'â–²' : dayValueDiff < 0 ? 'â–¼' : '';
+    const dayArrow = dayValueDiff > 0 ? '▲' : dayValueDiff < 0 ? '▼' : '';
     const dayArrowClass = dayValueDiff > 0 ? 'final-arrow-up' : dayValueDiff < 0 ? 'final-arrow-down' : '';
     finalValueDayChangeSpan.innerHTML = `${formatIndianCurrency(dayValueDiff)} <span class="${dayArrowClass}">${dayArrow} ${dayValuePercent.toFixed(2)}%</span>`;
   } else {
@@ -408,10 +408,10 @@ function updateChart(fundKey) {
   if (latestInvestedAmount > 0) {
     percentage_change = ((finalValue - latestInvestedAmount) / latestInvestedAmount) * 100;
     if (percentage_change > 0) {
-      arrow = 'â–²';
+      arrow = '▲';
       arrowClass = 'final-arrow-up';
     } else if (percentage_change < 0) {
-      arrow = 'â–¼';
+      arrow = '▼';
       arrowClass = 'final-arrow-down';
     } else {
       arrow = '';
@@ -876,10 +876,10 @@ function updateTotalChart() {
   if (lastKnownInvestedAmount > 0) {
     percentage_change = ((lastKnownPortfolioValue - lastKnownInvestedAmount) / lastKnownInvestedAmount) * 100;
     if (percentage_change > 0) {
-      arrow = 'â–²';
+      arrow = '▲';
       arrowClass = 'final-arrow-up';
     } else if (percentage_change < 0) {
-      arrow = 'â–¼';
+      arrow = '▼';
       arrowClass = 'final-arrow-down';
     }
   }
@@ -894,10 +894,10 @@ function updateTotalChart() {
   let overallArrow = '';
   let overallArrowClass = '';
   if (overallGain > 0) {
-    overallArrow = 'â–²';
+    overallArrow = '▲';
     overallArrowClass = 'final-arrow-up';
   } else if (overallGain < 0) {
-    overallArrow = 'â–¼';
+    overallArrow = '▼';
     overallArrowClass = 'final-arrow-down';
   }
   const overallGainElem = document.getElementById('totalOverallGain');
@@ -912,10 +912,10 @@ function updateTotalChart() {
   let dayArrow = '';
   let dayArrowClass = '';
   if (dayDiff > 0) {
-    dayArrow = 'â–²';
+    dayArrow = '▲';
     dayArrowClass = 'final-arrow-up';
   } else if (dayDiff < 0) {
-    dayArrow = 'â–¼';
+    dayArrow = '▼';
     dayArrowClass = 'final-arrow-down';
   }
   if(totalDayGainSpan){
