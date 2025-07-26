@@ -195,6 +195,8 @@ function updateChart(fundKey) {
       overallGainElem.innerHTML = `<span style="color:#555;font-weight:bold;">0</span>`;
     }
   }
+  console.log("Overall Gain before rounding:", overallGain);
+  console.log("Overall Gain after rounding:", roundedGain);
 
   // NAV day-change: rupee + percent (single span for NAV change)
   const navChangeSpan = document.getElementById("navChange");
@@ -741,6 +743,8 @@ function updateTotalChart() {
       overallGainElem.innerHTML = `<span style="color:#555;font-weight:bold;">0</span>`;
     }
   }
+  console.log("Total Overall Gain before rounding:", overallGain);
+  console.log("Total Overall Gain after rounding:", roundedOverallGain);
 
   // --- 2. Day's Gain ---
   const totalDayGainSpan = document.getElementById('totalDayGain');
