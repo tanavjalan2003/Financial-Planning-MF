@@ -64,7 +64,7 @@ function formatIndianCurrency(amount, decimals = 2) {
 }
 
 function formatNAVValue(nav) {
-  return nav.toLocaleString('en-IN'); // No fixed decimal places, full precision
+  return nav.toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 }
 
 // --- LOGIN HANDLER ---
