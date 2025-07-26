@@ -186,12 +186,13 @@ function updateChart(fundKey) {
   const overallGain = finalValue - latestInvestedAmount;
   const overallGainElem = document.getElementById('dashboardOverallGain');
   if (overallGainElem) {
-    if (overallGain > 0) {
-      overallGainElem.innerHTML = `<span style="color:#00b894;font-weight:bold;">+${overallGain.toLocaleString(undefined, {maximumFractionDigits: 2})}</span>`;
-    } else if (overallGain < 0) {
-      overallGainElem.innerHTML = `<span style="color:#d63031;font-weight:bold;">${overallGain.toLocaleString(undefined, {maximumFractionDigits: 2})}</span>`;
+    const roundedGain = Math.round(overallGain);
+    if (roundedGain > 0) {
+      overallGainElem.innerHTML = `<span style="color:#00b894;font-weight:bold;">+${roundedGain.toLocaleString()}</span>`;
+    } else if (roundedGain < 0) {
+      overallGainElem.innerHTML = `<span style="color:#d63031;font-weight:bold;">${roundedGain.toLocaleString()}</span>`;
     } else {
-      overallGainElem.innerHTML = `<span style="color:#555;font-weight:bold;">0.00</span>`;
+      overallGainElem.innerHTML = `<span style="color:#555;font-weight:bold;">0</span>`;
     }
   }
 
@@ -720,23 +721,24 @@ function updateTotalChart() {
 
   // --- 1. Overall Gain ---
   const overallGain = lastKnownPortfolioValue - lastKnownInvestedAmount;
+  const roundedOverallGain = Math.round(overallGain);
   let overallArrow = '';
   let overallArrowClass = '';
-  if (overallGain > 0) {
+  if (roundedOverallGain > 0) {
     overallArrow = '▲';
     overallArrowClass = 'final-arrow-up';
-  } else if (overallGain < 0) {
+  } else if (roundedOverallGain < 0) {
     overallArrow = '▼';
     overallArrowClass = 'final-arrow-down';
   }
   const overallGainElem = document.getElementById('totalOverallGain');
   if (overallGainElem) {
-    if (overallGain > 0) {
-      overallGainElem.innerHTML = `<span style="color:#00b894;font-weight:bold;">+${formatIndianCurrency(overallGain)}</span>`;
-    } else if (overallGain < 0) {
-      overallGainElem.innerHTML = `<span style="color:#d63031;font-weight:bold;">${formatIndianCurrency(overallGain)}</span>`;
+    if (roundedOverallGain > 0) {
+      overallGainElem.innerHTML = `<span style="color:#00b894;font-weight:bold;">+${roundedOverallGain.toLocaleString()}</span>`;
+    } else if (roundedOverallGain < 0) {
+      overallGainElem.innerHTML = `<span style="color:#d63031;font-weight:bold;">${roundedOverallGain.toLocaleString()}</span>`;
     } else {
-      overallGainElem.innerHTML = `<span style="color:#555;font-weight:bold;">0.00</span>`;
+      overallGainElem.innerHTML = `<span style="color:#555;font-weight:bold;">0</span>`;
     }
   }
 
