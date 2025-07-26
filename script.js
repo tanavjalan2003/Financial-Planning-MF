@@ -377,7 +377,7 @@ async function fetchLatestNAVFromAMFI(fundKey) {
     }
 
     // Store latest NAV
-    storeNAV(fundKey, navDate, latestEntry.navValue);
+    storeNAV(fundKey, navDate, Number(latestEntry.navValue.toFixed(3)));
     return true;
 
   } catch (err) {
