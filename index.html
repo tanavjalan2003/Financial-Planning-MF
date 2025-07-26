@@ -22,7 +22,7 @@
       <button class="tab-button active" data-tab="totalTab">Total Portfolio</button>
       <button class="tab-button" data-tab="dashboardTab">Dashboard</button>
       <button class="tab-button" data-tab="manageTab">Add Funds / Manage</button>
-      <button class="tab-button" data-tab="sipTab">SIP Planner</button>
+      <!-- Removed SIP Planner tab button -->
     </div>
 
     <!-- Total Tab -->
@@ -164,50 +164,6 @@
         <canvas id="navChart" height="100"></canvas>
       </div>
     </div>
-    
-    <div id="sipTab" class="tab-content">
-    <h1>🗓️ SIP Planner</h1>
-    <form id="sipForm">
-      <div class="form-group">
-        <label for="sipFundSelect">Fund Name:</label>
-        <select id="sipFundSelect" required>
-          <!-- options populated dynamically -->
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="sipAmount">Amount per SIP (₹):</label>
-        <input type="number" id="sipAmount" step="0.01" required />
-      </div>
-      <div class="form-group">
-        <label for="sipStart">Start Date:</label>
-        <input type="date" id="sipStart" required />
-      </div>
-      <div class="form-group">
-        <label for="sipEnd">End Date:</label>
-        <input type="date" id="sipEnd" required />
-      </div>
-      <div class="form-group">
-        <label for="sipDay">Day of Month:</label>
-        <input type="number" id="sipDay" min="1" max="28" required />
-        <small>(Choose 1–28 for best reliability across months)</small>
-      </div>
-      <button type="submit">Add SIP</button>
-    </form>
-    <h2>Your SIPs</h2>
-    <table id="sipTable" border="1" cellspacing="0" cellpadding="6">
-      <thead>
-        <tr>
-          <th>Fund Name</th>
-          <th>Amount</th>
-          <th>From</th>
-          <th>To</th>
-          <th>Day</th>
-          <th>Remove</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
 
     <!-- Manage Tab -->
     <div id="manageTab" class="tab-content">
