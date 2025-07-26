@@ -104,36 +104,6 @@ let navChart;
 let currentFund = 'bandhan';
 let totalChartMode = 'focus';  // default set to focus mode
 
-// --- Tabs Logic ---
-const tabs = document.querySelectorAll('.tab-button');
-const tabContents = document.querySelectorAll('.tab-content');
-tabs.forEach(btn => {
-  btn.addEventListener('click', () => {
-    tabs.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-
-    const target = btn.getAttribute('data-tab');
-    tabContents.forEach(tc => {
-      tc.id === target ? tc.classList.add('active') : tc.classList.remove('active');
-    });
-
-    // Fix: Sync currentFund and schemeCodeInput on tab switch
-    if (target === "manageTab") {
-      currentFund = schemeSelect.value;              // Use the schemeSelect dropdown's current value
-      schemeCodeInput.value = fundData[currentFund].schemeCode;
-      renderTransactionHistory();
-      updateChart(currentFund);
-    } else if (target === "dashboardTab") {
-      currentFund = fundSelect.value;                // Use the fundSelect dropdown's current value
-      schemeCodeInput.value = fundData[currentFund].schemeCode;
-      renderTransactionHistory();
-      updateChart(currentFund);
-    } else if (target === "totalTab") {
-      updateTotalChart();               // <-- This is all you need!
-    }
-  });
-});
-
 // Populate schemeSelect dropdown and sync fundSelect
 function populateDropdowns() {
   schemeSelect.innerHTML = '';
@@ -965,13 +935,46 @@ function updateTotalChart() {
 window.onload = async () => {
   purchaseDate.max = getTodayDateStr();
   populateDropdowns();
+  renderTransactionHistory();  // Add to render initial transactions
   updateChart(currentFund);
   updateTotalChart();
+
+  // --- Tabs Logic ---
+  const tabs = document.querySelectorAll('.tab-button');
+  const tabContents = document.querySelectorAll('.tab-content');
+  tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Remove active class from all tab buttons and tab contents
+      tabs.forEach(b => b.classList.remove('active'));
+      tabContents.forEach(tc => tc.classList.remove('active'));
+
+      // Add active class to clicked tab button and corresponding tab content
+      btn.classList.add('active');
+      const target = btn.getAttribute('data-tab');
+      const targetTabContent = document.getElementById(target);
+      if (targetTabContent) targetTabContent.classList.add('active');
+
+      // Sync currentFund and schemeCodeInput on tab switch
+      if (target === "manageTab") {
+        currentFund = schemeSelect.value;              // Get current fund from schemeSelect
+        schemeCodeInput.value = fundData[currentFund].schemeCode;
+        renderTransactionHistory();
+        updateChart(currentFund);
+      } else if (target === "dashboardTab") {
+        currentFund = fundSelect.value;                // Get current fund from fundSelect
+        schemeCodeInput.value = fundData[currentFund].schemeCode;
+        renderTransactionHistory();
+        updateChart(currentFund);
+      } else if (target === "totalTab") {
+        updateTotalChart();
+      }
+    });
+  });
 
   const originalBtn = document.getElementById('originalModeBtn');
   const focusBtn = document.getElementById('focusModeBtn');
 
-  // Add event listeners
+  // Add event listeners for total chart mode buttons
   originalBtn.addEventListener('click', () => {
     if (totalChartMode !== 'original') {
       totalChartMode = 'original';
@@ -990,7 +993,7 @@ window.onload = async () => {
     }
   });
 
-  // Set initial button selected state based on totalChartMode
+  // Set initial selected state for total chart mode buttons
   if (totalChartMode === 'focus') {
     originalBtn.classList.remove('selected');
     focusBtn.classList.add('selected');
