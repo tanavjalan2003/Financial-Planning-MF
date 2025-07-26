@@ -733,8 +733,14 @@ function updateTotalChart() {
   }
   const overallGainElem = document.getElementById('totalOverallGain');
   if (overallGainElem) {
-    overallGainElem.innerHTML = `<span style="color:#00b894;font-weight:bold;">+${formatIndianCurrency(overallGain)}</span>`;
-  } 
+    if (overallGain > 0) {
+      overallGainElem.innerHTML = `<span style="color:#00b894;font-weight:bold;">+${formatIndianCurrency(overallGain)}</span>`;
+    } else if (overallGain < 0) {
+      overallGainElem.innerHTML = `<span style="color:#d63031;font-weight:bold;">${formatIndianCurrency(overallGain)}</span>`;
+    } else {
+      overallGainElem.innerHTML = `<span style="color:#555;font-weight:bold;">0.00</span>`;
+    }
+  }
 
   // --- 2. Day's Gain ---
   const totalDayGainSpan = document.getElementById('totalDayGain');
