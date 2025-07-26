@@ -184,9 +184,9 @@ function updateChart(fundKey) {
 
   // Calculate and show overall gain for this fund on the dashboard tab
   const overallGain = finalValue - latestInvestedAmount;
+  const roundedGain = Math.round(overallGain);
   const overallGainElem = document.getElementById('dashboardOverallGain');
   if (overallGainElem) {
-    const roundedGain = Math.round(overallGain);
     if (roundedGain > 0) {
       overallGainElem.innerHTML = `<span style="color:#00b894;font-weight:bold;">+${roundedGain.toLocaleString()}</span>`;
     } else if (roundedGain < 0) {
