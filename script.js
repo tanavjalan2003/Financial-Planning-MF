@@ -504,12 +504,11 @@ purchaseDate.addEventListener('change', () => {
 
   const navs = getStoredNAVs(currentFund);
   if (navs[dateStr]) {
-    purchaseNAVInput.value = navs[dateStr];
+    purchaseNAVInput.value = Number(navs[dateStr]).toFixed(3);  // round to 3 decimals string
   } else {
     alert("No NAV data available for selected date. Please pick another date.");
     purchaseNAVInput.value = '';
   }
-
   updateInvestedAmount();
 });
 
