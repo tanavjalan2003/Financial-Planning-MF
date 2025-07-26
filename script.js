@@ -718,7 +718,6 @@ function updateInvestedAmount() {
       }
     }
   });
-}
 
 window.onload = async () => {
   purchaseDate.max = getTodayDateStr();
