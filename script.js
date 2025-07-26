@@ -17,8 +17,6 @@ const fundData = {
 const NAV_STORAGE_KEY_PREFIX = "navs_";
 const TRANSACTION_STORAGE_KEY_PREFIX = "transactions_";
 
-const SIP_STORAGE_KEY = "sipPlans";
-
 // Elements
 const fundSelect = document.getElementById('fundSelect');
 const schemeSelect = document.getElementById('schemeSelect');
@@ -34,8 +32,6 @@ const latestNavSpan = document.getElementById('latestNav');
 const finalValueSpan = document.getElementById('finalValue');
 const lastUpdatedLabel = document.getElementById('lastUpdated');
 const fetchNavButtons = document.querySelectorAll('.fetch-button');
-const sipForm = document.getElementById('sipForm');
-const sipTableBody = document.querySelector('#sipTable tbody');
 
 async function loadNAVJsonForFund(fundKey) {
   try {
@@ -56,7 +52,7 @@ async function loadAllNAVs() {
   // Wait for the next tick (optional but can help)
   await new Promise(resolve => setTimeout(resolve, 0));
 
-  generateSIPTransactions();  // Still synchronous, but after all NAVs loaded
+  //generateSIPTransactions();  // Still synchronous, but after all NAVs loaded
 
   // After transactions generated, update charts
   updateChart(currentFund);
@@ -103,27 +99,6 @@ const fundColors = {
   tata_small_cap: "#55efc4"
 };
 
-// SIP helpers
-function getSIPs() {
-  const raw = localStorage.getItem(SIP_STORAGE_KEY);
-  return raw ? JSON.parse(raw) : [];
-}
-function saveSIPs(sips) {
-  localStorage.setItem(SIP_STORAGE_KEY, JSON.stringify(sips));
-}
-
-// Populate SIP fund dropdown
-function populateSIPDropdown() {
-  const sipFundSelect = document.getElementById('sipFundSelect');
-  sipFundSelect.innerHTML = '';
-  for (const key in fundData) {
-    const option = document.createElement("option");
-    option.value = key;
-    option.textContent = fundData[key].scheme;
-    sipFundSelect.appendChild(option);
-  }
-}
-
 const chartCtx = document.getElementById('navChart').getContext('2d');
 let navChart;
 let currentFund = 'bandhan';
@@ -156,122 +131,8 @@ tabs.forEach(btn => {
     } else if (target === "totalTab") {
       updateTotalChart();               // <-- This is all you need!
     }
-    else if (target === "sipTab") {
-      populateSIPDropdown();
-      renderSIPTable();
-    }
   });
 });
-
-function renderSIPTable() {
-  const sips = getSIPs();
-  sipTableBody.innerHTML = '';
-  if (!sips.length) {
-    sipTableBody.innerHTML = "<tr><td colspan='6'>No SIPs yet.</td></tr>";
-    return;
-  }
-  sips.forEach((sip, i) => {
-    const tr = document.createElement('tr');
-    tr.style.backgroundColor = fundColors[sip.fundKey] || "#fff";
-    tr.innerHTML = `
-      <td>${fundData[sip.fundKey].scheme}</td>
-      <td>${formatIndianCurrency(sip.sipAmount)}</td>
-      <td>${sip.sipStart}</td>
-      <td>${sip.sipEnd}</td>
-      <td>${sip.sipDay}</td>
-      <td><button class="remove-sip" data-i="${i}">Remove</button></td>
-    `;
-    sipTableBody.appendChild(tr);
-  });
-  document.querySelectorAll('.remove-sip').forEach(btn => {
-    btn.onclick = () => {
-      const sips = getSIPs();
-      const idx = +btn.getAttribute('data-i');
-      removeSIPTransactions(sips[idx]);
-      sips.splice(idx, 1);
-      saveSIPs(sips);
-      renderSIPTable();
-      generateSIPTransactions();
-      updateChart(currentFund);
-      updateTotalChart();
-    }
-  });
-}
-
-sipForm.addEventListener('submit', e => {
-  e.preventDefault();
-  const fundKey = document.getElementById('sipFundSelect').value;
-  const sipAmount = Number(document.getElementById('sipAmount').value);
-  const sipStart = document.getElementById('sipStart').value;
-  const sipEnd = document.getElementById('sipEnd').value;
-  const sipDay = Number(document.getElementById('sipDay').value);
-  // Basic validation
-  if (sipStart > sipEnd) return alert("End date must be after start date");
-  const newSIP = { fundKey, sipAmount, sipStart, sipEnd, sipDay };
-  const sips = getSIPs();
-  sips.push(newSIP);
-  saveSIPs(sips);
-  renderSIPTable();
-  generateSIPTransactions();
-  updateChart(currentFund);
-  updateTotalChart();
-  sipForm.reset();
-  alert("SIP added!");
-});
-
-function generateSIPTransactions() {
-  const sips = getSIPs();
-  sips.forEach(sip => {
-    const fundKey = sip.fundKey;
-    let current = new Date(sip.sipStart);
-    const end = new Date(sip.sipEnd);
-    while (current <= end) {
-      // Set to desired SIP day
-      const txDate = new Date(current.getFullYear(), current.getMonth(), sip.sipDay);
-      if (txDate > end) break;
-      const txDateStr = txDate.toISOString().split("T")[0];
-
-      // Only if NAV exists for that date
-      const navs = getStoredNAVs(fundKey);
-      const nav = navs[txDateStr];
-      if (!nav) {
-        // Move to next month
-        current.setMonth(current.getMonth() + 1);
-        continue;
-      }
-
-      const txs = getTransactions(fundKey);
-      // Skip if already a SIP entry for this fund/date
-      if (!txs.some(tx => tx.date === txDateStr && tx.isSIP)) {
-        const units = parseFloat((sip.sipAmount / nav).toFixed(4));
-        txs.push({
-          scheme: fundData[fundKey].scheme,
-          schemeCode: fundData[fundKey].schemeCode,
-          date: txDateStr,
-          units,
-          purchaseNAV: nav,
-          investedAmount: sip.sipAmount,
-          isSIP: true
-        });
-        saveTransactions(fundKey, txs);
-      }
-      // Next month
-      current.setMonth(current.getMonth() + 1);
-    }
-  });
-}
-
-function removeSIPTransactions(sip) {
-  const fundKey = sip.fundKey;
-  let txs = getTransactions(fundKey);
-  // Remove transactions that match the SIP: isSIP + date in SIP period + SIP day
-  txs = txs.filter(tx => {
-    if (!tx.isSIP) return true;
-    // Only remove if in period AND it's the right day
-    return !(tx.date >= sip.sipStart && tx.date <= sip.sipEnd && Number(tx.date.slice(8, 10)) === Number(sip.sipDay));
-  });
-  saveTransactions(fundKey, txs);
-}
 
 // Populate schemeSelect dropdown and sync fundSelect
 function populateDropdowns() {
@@ -1104,8 +965,6 @@ function updateTotalChart() {
 window.onload = async () => {
   purchaseDate.max = getTodayDateStr();
   populateDropdowns();
-  populateSIPDropdown();
-  generateSIPTransactions();
   updateChart(currentFund);
   updateTotalChart();
 
