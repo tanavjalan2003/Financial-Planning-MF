@@ -59,9 +59,8 @@ async function loadAllNAVs() {
   updateTotalChart();
 }
 
-function formatIndianCurrency(amount) {
-  // Formats number as Indian currency with ₹ symbol and lakhs/crores commas
-  return amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function formatIndianCurrency(amount, decimals = 2) {
+  return amount.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
 function formatNAVValue(nav) {
@@ -178,9 +177,9 @@ function updateChart(fundKey) {
   const finalValue = finalValues.length ? finalValues[finalValues.length - 1] : 0;
   const latestInvestedAmount = investedAmountsByDate.length ? investedAmountsByDate[investedAmountsByDate.length - 1] : 0;
 
-  investedAmountSpan.textContent = formatIndianCurrency(latestInvestedAmount);
+  investedAmountSpan.textContent = formatIndianCurrency(latestInvestedAmount, 1);
+  finalValueSpan.textContent = formatIndianCurrency(finalValue, 1);
   latestNavSpan.textContent = formatNAVValue(latestNAV);
-  finalValueSpan.textContent = formatIndianCurrency(finalValue);
   lastUpdatedLabel.textContent = dates.length ? `Last updated on: ${dates[dates.length - 1]}` : "Last updated on: --";
 
   // Calculate and show overall gain for this fund on the dashboard tab
@@ -656,8 +655,8 @@ function updateTotalChart() {
     }
   }
 
-  document.getElementById('totalInvestedAmount').textContent = formatIndianCurrency(lastKnownInvestedAmount);
-  document.getElementById('totalFinalValue').textContent = formatIndianCurrency(lastKnownPortfolioValue);
+  document.getElementById('totalInvestedAmount').textContent = formatIndianCurrency(lastKnownInvestedAmount, 0);
+  document.getElementById('totalFinalValue').textContent = formatIndianCurrency(lastKnownPortfolioValue, 0);
   // === LAST KNOWN VALUE LOGIC END ===
 
   // Remove last date if not all funds have a NAV for it
