@@ -64,7 +64,7 @@ async function loadAllNAVs() {
 }
 
 function formatIndianCurrency(amount) {
-  // Formats number as Indian currency with â‚¹ symbol and lakhs/crores commas
+  // Formats number as Indian currency with ₹ symbol and lakhs/crores commas
   return amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
@@ -380,7 +380,7 @@ function updateChart(fundKey) {
     navChangeSpan.textContent = '';
   }
 
-  // Final Value day-over-day absolute (â‚¹) and % change, e.g. ▼ -966.88 (-0.43%)
+  // Final Value day-over-day absolute (₹) and % change, e.g. ▼ -966.88 (-0.43%)
   const finalValueDayChangeSpan = document.getElementById('finalValueDayChange');
   if (dates.length >= 2) {
     const latestDate = dates[dates.length - 1];
@@ -483,7 +483,7 @@ navChart = new Chart(chartCtx, {
         intersect: false,
         callbacks: {
           label: function(context) {
-            return context.dataset.label + ': â‚¹' + context.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            return context.dataset.label + ': ₹' + context.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
           }
         }
       }
@@ -814,7 +814,7 @@ function updateTotalChart() {
     lastKnownPortfolioValue += nav * units;
     lastKnownInvestedAmount += invested;
 
-    // For dayâ€™s gain: get the previous NAV date if exists
+    // For day's gain: get the previous NAV date if exists
     if (navDates.length >= 2) {
       const prevNavDate = navDates[navDates.length - 2];
       const prevUnits = txs.reduce((sum, tx) => (tx.date <= prevNavDate ? sum + Number(tx.units) : sum), 0);
@@ -1009,10 +1009,10 @@ function updateTotalChart() {
         callbacks: {
           label: function(context) {
             if (context.dataIndex === 0 && fundsInProfit.length > 0) {
-              return ['Profit:', ...fundsInProfit.map(f => 'â€¢ ' + f.name)];
+              return ['Profit:', ...fundsInProfit.map(f => '• ' + f.name)];
             }
             if (context.dataIndex === 1 && fundsInLoss.length > 0) {
-              return ['Loss:', ...fundsInLoss.map(f => 'â€¢ ' + f.name)];
+              return ['Loss:', ...fundsInLoss.map(f => '• ' + f.name)];
             }
             return '';
           }
@@ -1087,7 +1087,7 @@ function updateTotalChart() {
           intersect: false,
           callbacks: {
             label: function(context) {
-              return context.dataset.label + ': â‚¹' + context.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+              return context.dataset.label + ': ₹' + context.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             }
           }
         }
