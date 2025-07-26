@@ -1,6 +1,6 @@
 // script.js
 
-// FUND DATA with 9 funds
+// FUND DATA with 10 funds (corrected to 10 in your data)
 const fundData = {
   bandhan: { scheme: "Bandhan Small Cap Fund Direct-Growth", schemeCode: "147944", investedAmount: 0, totalUnits: 0 },
   hdfc_balanced_advantage: { scheme: "HDFC Balanced Advantage Fund - Growth", schemeCode: "100119", investedAmount: 0, totalUnits: 0 },
@@ -17,7 +17,7 @@ const fundData = {
 const NAV_STORAGE_KEY_PREFIX = "navs_";
 const TRANSACTION_STORAGE_KEY_PREFIX = "transactions_";
 
-// Elements
+// Elements references
 const fundSelect = document.getElementById('fundSelect');
 const schemeSelect = document.getElementById('schemeSelect');
 const schemeCodeInput = document.getElementById('schemeCode');
@@ -54,12 +54,7 @@ async function loadAllNAVs() {
   for (const fundKey in fundData) {
     await loadNAVJsonForFund(fundKey);
   }
-  // Wait for the next tick (optional but can help)
   await new Promise(resolve => setTimeout(resolve, 0));
-
-  // Removed generateSIPTransactions();
-
-  // After transactions generated, update charts
   updateChart(currentFund);
   updateTotalChart();
 }
@@ -69,7 +64,7 @@ function formatIndianCurrency(amount) {
 }
 
 function formatNAVValue(nav) {
-  return nav.toLocaleString('en-IN'); // No fixed decimal places, full precision
+  return nav.toLocaleString('en-IN');
 }
 
 // --- LOGIN HANDLER ---
@@ -81,10 +76,7 @@ function handleLogin() {
   if (user === "tanav2003" && pass === "Ranisati2003@#$%") {
     document.getElementById("loginScreen").style.display = "none";
     document.querySelector(".container").style.display = "block";
-
-    // Load NAV JSON files after successful login
     loadAllNAVs();
-
   } else {
     error.textContent = "❌ Invalid username or password.";
   }
@@ -102,8 +94,6 @@ const fundColors = {
   motilal_midcap: "#fd79a8",
   tata_small_cap: "#55efc4"
 };
-
-// Removed all SIP helper functions and variables
 
 // Populate schemeSelect dropdown and sync fundSelect
 function populateDropdowns() {
@@ -148,7 +138,6 @@ function saveTransactions(fundKey, transactions) {
   localStorage.setItem(TRANSACTION_STORAGE_KEY_PREFIX + fundKey, JSON.stringify(transactions));
 }
 
-// Update chart & summary display
 function updateChart(fundKey) {
   currentFund = fundKey;
   const navs = getStoredNAVs(fundKey);
@@ -315,7 +304,6 @@ function updateChart(fundKey) {
   });
 }
 
-// Fetch latest NAV from AMFI India text file
 async function fetchLatestNAVFromAMFI(fundKey) {
   try {
     const proxyUrl = "https://cors-anywhere.herokuapp.com/";
@@ -368,7 +356,6 @@ async function fetchLatestNAVFromAMFI(fundKey) {
   }
 }
 
-// Fetch all NAVs for all funds
 async function fetchAllNAVs() {
   const updatedFunds = [];
   for (const key in fundData) {
@@ -383,7 +370,6 @@ async function fetchAllNAVs() {
   updateChart(currentFund);
 }
 
-// Populate transaction history table
 function renderTransactionHistory() {
   const txs = getTransactions(currentFund);
   transactionHistoryBody.innerHTML = '';
@@ -395,7 +381,6 @@ function renderTransactionHistory() {
 
   txs.forEach((tx, i) => {
     const tr = document.createElement('tr');
-
     tr.innerHTML = `
       <td>${tx.scheme}</td>
       <td>${tx.date}</td>
@@ -422,7 +407,6 @@ function renderTransactionHistory() {
   });
 }
 
-// Recalculate investedAmount and totalUnits
 function recalcFundTotals(fundKey, transactions) {
   let totalInvested = 0;
   let totalUnits = 0;
@@ -434,7 +418,6 @@ function recalcFundTotals(fundKey, transactions) {
   fundData[fundKey].totalUnits = totalUnits;
 }
 
-// Sync fund select dropdown changes
 fundSelect.addEventListener('change', () => {
   currentFund = fundSelect.value;
   schemeSelect.value = currentFund;
@@ -444,7 +427,6 @@ fundSelect.addEventListener('change', () => {
   updateChart(currentFund);
 });
 
-// Sync scheme select dropdown changes
 schemeSelect.addEventListener('change', () => {
   currentFund = schemeSelect.value;
   fundSelect.value = currentFund;
@@ -454,7 +436,6 @@ schemeSelect.addEventListener('change', () => {
   updateChart(currentFund);
 });
 
-// Clear form inputs
 function clearFormInputs() {
   purchaseDate.value = '';
   purchaseNAVInput.value = '';
@@ -467,7 +448,6 @@ function parseLocalDate(dateStr) {
   return new Date(year, month - 1, day);
 }
 
-// When purchase date changes
 purchaseDate.addEventListener('change', () => {
   const dateStr = purchaseDate.value;
   if (!dateStr) return;
@@ -493,7 +473,6 @@ purchaseDate.addEventListener('change', () => {
   updateInvestedAmount();
 });
 
-// Update invested amount when units or purchase NAV change
 unitsInput.addEventListener('input', updateInvestedAmount);
 purchaseNAVInput.addEventListener('input', updateInvestedAmount);
 
@@ -507,8 +486,149 @@ function updateInvestedAmount() {
   }
 }
 
+// ---------------------
+// *New* updateTotalChart function encapsulating the totals and pie chart display
 
-  // --- 1. Overall Gain ---
+function updateTotalChart() {
+  // Calculate totals and aggregate info over all funds
+
+  // Variables to keep track of totals for portfolio overall
+  let lastKnownInvestedAmount = 0;
+  let lastKnownPortfolioValue = 0;
+  let previousPortfolioValue = 0;  // For day gain calculation, previous day total final value (if applicable)
+
+  // To collect data for time series chart
+  const allDatesSet = new Set();
+
+  // Collect pie chart data containers
+  let fundsInProfit = [];
+  let fundsInLoss = [];
+
+  // Collect per fund time series of units and invested amount for merging
+  const fundTimeSeries = {};  // { fundKey: { dates: [], investedByDate: [], finalValueByDate: [] } }
+
+  for (const key in fundData) {
+    const navs = getStoredNAVs(key);
+    const txs = getTransactions(key);
+
+    if (!txs.length || Object.keys(navs).length === 0) continue;
+
+    const dates = Object.keys(navs).sort();
+
+    // Accumulate all unique dates into allDatesSet for chart labels
+    dates.forEach(d => allDatesSet.add(d));
+
+    // Calculate totals for invested and units for this fund
+    let invested = 0;
+    let units = 0;
+    txs.forEach(tx => {
+      invested += Number(tx.investedAmount);
+      units += Number(tx.units);
+    });
+
+    const lastDate = dates[dates.length - 1];
+    const latestNav = navs[lastDate];
+    const latestValue = latestNav * units;
+
+    lastKnownInvestedAmount += invested;
+    lastKnownPortfolioValue += latestValue;
+
+    // Compute day before last
+    const prevDate = dates.length > 1 ? dates[dates.length - 2] : lastDate;
+    const prevNav = navs[prevDate];
+    const prevValue = prevNav * units;
+    previousPortfolioValue += prevValue;
+
+    // Prepare profit/loss data for pie chart
+    const gain = latestValue - invested;
+    const percent = invested > 0 ? (gain / invested) * 100 : 0;
+    const fundObj = { key, name: fundData[key].scheme, invested, value: latestValue, gain, percent };
+    if (gain >= 0) fundsInProfit.push(fundObj);
+    else fundsInLoss.push(fundObj);
+
+    // Prepare timeseries for this fund
+    let cumulativeInvestedByDate = [];
+    let cumulativeUnitsByDate = [];
+    let investedSum = 0;
+    let unitsSum = 0;
+    const sortedTxs = txs.slice().sort((a,b) => new Date(a.date) - new Date(b.date));
+    const tsInvestedByDate = {};
+    const tsUnitsByDate = {};
+
+    // Map transactions by date
+    sortedTxs.forEach(tx => {
+      if (!tsInvestedByDate[tx.date]) tsInvestedByDate[tx.date] = 0;
+      if (!tsUnitsByDate[tx.date]) tsUnitsByDate[tx.date] = 0;
+      tsInvestedByDate[tx.date] += Number(tx.investedAmount);
+      tsUnitsByDate[tx.date] += Number(tx.units);
+    });
+
+    let fundDates = dates.slice(); // dates where NAV exists
+    fundDates.sort();
+
+    let investedAccumulated = 0;
+    let unitsAccumulated = 0;
+    const investedByDate = [];
+    const finalValueByDate = [];
+
+    fundDates.forEach(date => {
+      if (tsInvestedByDate[date]) investedAccumulated += tsInvestedByDate[date];
+      if (tsUnitsByDate[date]) unitsAccumulated += tsUnitsByDate[date];
+
+      investedByDate.push(investedAccumulated);
+      const navVal = navs[date] || 0;
+      finalValueByDate.push(navVal * unitsAccumulated);
+    });
+
+    fundTimeSeries[key] = {
+      dates: fundDates,
+      investedByDate,
+      finalValueByDate
+    };
+  }
+
+  // Sort profit/loss funds
+  fundsInProfit.sort((a, b) => b.gain - a.gain);
+  fundsInLoss.sort((a, b) => a.gain - b.gain);
+
+  // Pie chart data and labels
+  const numFundsProfit = fundsInProfit.length;
+  const numFundsLoss = fundsInLoss.length;
+  const numFundsTotal = numFundsProfit + numFundsLoss;
+  const profitNames = fundsInProfit.map(f => f.name).join(', ') || "None";
+  const lossNames = fundsInLoss.map(f => f.name).join(', ') || "None";
+
+  // Summary stats
+  const totalProfitAmount = fundsInProfit.reduce((sum, f) => sum + f.gain, 0);
+  const totalProfitInvested = fundsInProfit.reduce((sum, f) => sum + f.invested, 0);
+  const totalProfitPercent = totalProfitInvested ? (totalProfitAmount / totalProfitInvested) * 100 : 0;
+  const totalLossAmount = fundsInLoss.reduce((sum, f) => sum + f.gain, 0);
+  const totalLossInvested = fundsInLoss.reduce((sum, f) => sum + f.invested, 0);
+  const totalLossPercent = totalLossInvested ? (totalLossAmount / totalLossInvested) * 100 : 0;
+
+  // Highest profit/loss funds
+  const hiProfit = fundsInProfit[0];
+  const hiLoss = fundsInLoss[0];
+
+  // Fill the HTML elements
+  document.getElementById('fundsInProfit').textContent = numFundsProfit;
+  document.getElementById('fundsInLoss').textContent = numFundsLoss;
+  document.getElementById('numFundsProfit').textContent = numFundsProfit;
+  document.getElementById('numFundsLoss').textContent = numFundsLoss;
+  document.getElementById('numFundsTotal').textContent = numFundsTotal;
+  document.getElementById('numFundsTotalB').textContent = numFundsTotal;
+  document.getElementById('totalProfitAmount').textContent = formatIndianCurrency(totalProfitAmount);
+  document.getElementById('totalProfitPercent').innerHTML = `<span style="color:#00b894;font-weight:bold;">${(totalProfitPercent >= 0 ? "+" : "") + totalProfitPercent.toFixed(2)}%</span>`;
+  document.getElementById('totalLossPercent').innerHTML = `<span style="color:#d63031;font-weight:bold;">${(totalLossPercent >= 0 ? "+" : "") + totalLossPercent.toFixed(2)}%</span>`;
+  document.getElementById('totalLossAmount').textContent = formatIndianCurrency(totalLossAmount);
+  document.getElementById('highestProfitName').textContent  = hiProfit ? hiProfit.name + " " : "-";
+  document.getElementById('highestProfitAmount').textContent = hiProfit ? "+" + formatIndianCurrency(hiProfit.gain) : "-";
+  document.getElementById('highestProfitPercent').textContent = hiProfit ? hiProfit.percent.toFixed(2) + "%" : "-";
+  document.getElementById('highestLossName').textContent = hiLoss ? hiLoss.name + " " : "-";
+  document.getElementById('highestLossAmount').textContent = hiLoss ? formatIndianCurrency(hiLoss.gain) : "-";
+  document.getElementById('highestLossPercent').textContent = hiLoss ? hiLoss.percent.toFixed(2) + "%" : "-";
+
+  // Overall Gain display
   const overallGain = lastKnownPortfolioValue - lastKnownInvestedAmount;
   let overallArrow = '';
   let overallArrowClass = '';
@@ -521,10 +641,10 @@ function updateInvestedAmount() {
   }
   const overallGainElem = document.getElementById('totalOverallGain');
   if (overallGainElem) {
-    overallGainElem.innerHTML = `<span style="color:#00b894;font-weight:bold;">+${formatIndianCurrency(overallGain)}</span>`;
+    overallGainElem.innerHTML = `<span class="${overallArrowClass}" style="font-weight: bold;">${overallGain >= 0 ? "+" : ""}${formatIndianCurrency(overallGain)} ${overallArrow}</span>`;
   } 
 
-  // --- 2. Day's Gain ---
+  // Day's Gain display
   const totalDayGainSpan = document.getElementById('totalDayGain');
   const dayDiff = lastKnownPortfolioValue - previousPortfolioValue;
   const dayPercent = previousPortfolioValue > 0 ? (dayDiff / previousPortfolioValue) * 100 : 0;
@@ -538,71 +658,10 @@ function updateInvestedAmount() {
     dayArrowClass = 'final-arrow-down';
   }
   if(totalDayGainSpan){
-    totalDayGainSpan.innerHTML = `<span class="${dayArrowClass}">${(dayDiff >= 0 ? '+' : '') + formatIndianCurrency(dayDiff)} ${dayArrow} ${dayPercent.toFixed(2)}%</span>`;
+    totalDayGainSpan.innerHTML = `<span class="${dayArrowClass}" style="font-weight: bold;">${(dayDiff >= 0 ? '+' : '') + formatIndianCurrency(dayDiff)} ${dayArrow} ${dayPercent.toFixed(2)}%</span>`;
   }
 
-  // --- 3. Funds-in-Profit vs. Loss Pie ---
-  // === BEGIN FUNDS PROFIT/LOSS ANALYSIS AND PIE ===
-  let fundsInProfit = [], fundsInLoss = [];
-  for (const key in fundData) {
-    const navs = getStoredNAVs(key);
-    const txs = getTransactions(key);
-    if (!txs.length) continue;
-    const dates = Object.keys(navs).sort();
-    if (!dates.length) continue;
-    const invested = txs.reduce((sum, tx) => sum + Number(tx.investedAmount), 0);
-    const units = txs.reduce((sum, tx) => sum + Number(tx.units), 0);
-    const lastDate = dates[dates.length - 1];
-    const latestNav = navs[lastDate];
-    const latestValue = latestNav * units;
-    const gain = latestValue - invested;
-    const percent = invested > 0 ? (gain / invested) * 100 : 0;
-    const fundObj = { key, name: fundData[key].scheme, invested, value: latestValue, gain, percent };
-    if (gain >= 0) fundsInProfit.push(fundObj);
-    else fundsInLoss.push(fundObj);
-  }
-  // Sorting for highest profit and loss
-  fundsInProfit.sort((a, b) => b.gain - a.gain);
-  fundsInLoss.sort((a, b) => a.gain - b.gain);
-
-  const numFundsProfit = fundsInProfit.length;
-  const numFundsLoss = fundsInLoss.length;
-  const numFundsTotal = numFundsProfit + numFundsLoss;
-  const profitNames = fundsInProfit.map(f => f.name).join(', ') || "None";
-  const lossNames   = fundsInLoss.map(f => f.name).join(', ') || "None";
-
-  // Summary stats
-  const totalProfitAmount = fundsInProfit.reduce((sum, f) => sum + f.gain, 0);
-  const totalProfitInvested = fundsInProfit.reduce((sum, f) => sum + f.invested, 0);
-  const totalProfitPercent = totalProfitInvested ? (totalProfitAmount / totalProfitInvested) * 100 : 0;
-  const totalLossAmount = fundsInLoss.reduce((sum, f) => sum + f.gain, 0);
-  const totalLossInvested = fundsInLoss.reduce((sum, f) => sum + f.invested, 0);
-  const totalLossPercent = totalLossInvested ? (totalLossAmount / totalLossInvested) * 100 : 0;
-
-  // Highest profit/loss funds
-  const hiProfit = fundsInProfit[0];
-  const hiLoss = fundsInLoss[0];
-  
-  // Fill the HTML
-  document.getElementById('fundsInProfit').textContent = numFundsProfit;
-  document.getElementById('fundsInLoss').textContent = numFundsLoss;
-  document.getElementById('numFundsProfit').textContent = numFundsProfit;
-  document.getElementById('numFundsLoss').textContent = numFundsLoss;
-  document.getElementById('numFundsTotal').textContent = numFundsTotal;
-  document.getElementById('numFundsTotalB').textContent = numFundsTotal;
-  document.getElementById('totalProfitAmount').textContent = formatIndianCurrency(totalProfitAmount);
-  document.getElementById('totalProfitPercent').innerHTML = `<span style="color:#00b894;font-weight:bold;">${(totalProfitPercent >= 0 ? "+" : "") + totalProfitPercent.toFixed(2)}%</span>`;
-  document.getElementById('totalLossPercent').innerHTML = `<span style="color:#d63031;font-weight:bold;">${(totalLossPercent >= 0 ? "+" : "") + totalLossPercent.toFixed(2)}%</span>`;
-  document.getElementById('totalLossAmount').textContent = formatIndianCurrency(totalLossAmount);
-  // Fill the HTML securely, with checks for undefined
-  document.getElementById('highestProfitName').textContent  = hiProfit ? hiProfit.name + " " : "-";
-  document.getElementById('highestProfitAmount').textContent = hiProfit ? "+" + formatIndianCurrency(hiProfit.gain) : "-";
-  document.getElementById('highestProfitPercent').textContent = hiProfit ? hiProfit.percent.toFixed(2) + "%" : "-";
-  document.getElementById('highestLossName').textContent = hiLoss ? hiLoss.name + " " : "-";
-  document.getElementById('highestLossAmount').textContent = hiLoss ? formatIndianCurrency(hiLoss.gain) : "-";
-  document.getElementById('highestLossPercent').textContent = hiLoss ? hiLoss.percent.toFixed(2) + "%" : "-";
-
-  // Pie
+  // Pie chart for profit/loss
   const pieLabels = [
     `Profit: ${numFundsProfit} (${profitNames})`,
     `Loss: ${numFundsLoss} (${lossNames})`
@@ -612,41 +671,82 @@ function updateInvestedAmount() {
   const profitLossPieCtx = document.getElementById('profitLossPie').getContext('2d');
   if(window.profitLossPieChart && typeof window.profitLossPieChart.destroy === "function") window.profitLossPieChart.destroy();
   window.profitLossPieChart = new Chart(profitLossPieCtx, {
-  type: 'pie',
-  data: {
-    labels: pieLabels,
-    datasets: [{
-      data: pieData,
-      backgroundColor: pieColors
-    }]
-  },
-  options: {
-    responsive: true,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: function(context) {
-            if (context.dataIndex === 0 && fundsInProfit.length > 0) {
-              return ['Profit:', ...fundsInProfit.map(f => '• ' + f.name)];
+    type: 'pie',
+    data: {
+      labels: pieLabels,
+      datasets: [{
+        data: pieData,
+        backgroundColor: pieColors
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              if (context.dataIndex === 0 && fundsInProfit.length > 0) {
+                return ['Profit:', ...fundsInProfit.map(f => '• ' + f.name)];
+              }
+              if (context.dataIndex === 1 && fundsInLoss.length > 0) {
+                return ['Loss:', ...fundsInLoss.map(f => '• ' + f.name)];
+              }
+              return '';
             }
-            if (context.dataIndex === 1 && fundsInLoss.length > 0) {
-              return ['Loss:', ...fundsInLoss.map(f => '• ' + f.name)];
-            }
-            return '';
           }
         }
       }
     }
-  }
-});
+  });
 
-  console.log('updateTotalChart');
-  console.log('Chart labels:', chartLabels);
-  console.log('Invested amounts with latest:', investedAmountsWithLatest);
-  console.log('Final values with latest:', finalValuesWithLatest);
-  
-  // Draw chart
+  // Prepare data for total chart
+
+  let chartLabels = Array.from(allDatesSet).sort();
+
+  // Create dictionaries for accumulated invested amount and final value per date across funds
+  const investedAmountsByDateDict = {};
+  const finalValuesByDateDict = {};
+  chartLabels.forEach(date => {
+    investedAmountsByDateDict[date] = 0;
+    finalValuesByDateDict[date] = 0;
+  });
+
+  // Aggregate all funds timeseries
+  for (const key in fundTimeSeries) {
+    const ts = fundTimeSeries[key];
+    const dates = ts.dates;
+    const investedByDate = ts.investedByDate;
+    const finalValueByDate = ts.finalValueByDate;
+    dates.forEach((date, idx) => {
+      if (investedAmountsByDateDict[date] !== undefined) investedAmountsByDateDict[date] += investedByDate[idx];
+      if (finalValuesByDateDict[date] !== undefined) finalValuesByDateDict[date] += finalValueByDate[idx];
+    });
+  }
+
+  const investedAmountsWithLatest = chartLabels.map(d => investedAmountsByDateDict[d]);
+  const finalValuesWithLatest = chartLabels.map(d => finalValuesByDateDict[d]);
+
+  // If focus mode: filter or limit data (example: last 90 days or so)
+  if (totalChartMode === 'focus') {
+    // Filter last 90 days approx
+    const cutoffTimestamp = Date.now() - (90 * 24 * 60 * 60 * 1000);
+    const filtLabels = [];
+    const filtInvested = [];
+    const filtFinals = [];
+    for (let i = 0; i < chartLabels.length; i++) {
+      if (new Date(chartLabels[i]).getTime() >= cutoffTimestamp) {
+        filtLabels.push(chartLabels[i]);
+        filtInvested.push(investedAmountsWithLatest[i]);
+        filtFinals.push(finalValuesWithLatest[i]);
+      }
+    }
+    chartLabels = filtLabels;
+    investedAmountsWithLatest.splice(0, investedAmountsWithLatest.length, ...filtInvested);
+    finalValuesWithLatest.splice(0, finalValuesWithLatest.length, ...filtFinals);
+  }
+
+  // Draw total chart
   if (window.totalNavChart && typeof window.totalNavChart.destroy === "function") {
     window.totalNavChart.destroy();
   }
@@ -690,7 +790,6 @@ function updateInvestedAmount() {
         y: {
           beginAtZero: false,
           ticks: {
-            // Format y-axis ticks as Indian number with 2 decimals
             callback: function(value) {
               return value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             }
@@ -698,9 +797,7 @@ function updateInvestedAmount() {
         }
       },
       plugins: {
-        legend: {
-          position: "top"
-        },
+        legend: { position: "top" },
         tooltip: {
           mode: "index",
           intersect: false,
@@ -718,6 +815,8 @@ function updateInvestedAmount() {
       }
     }
   });
+}
+
 
 window.onload = async () => {
   purchaseDate.max = getTodayDateStr();
@@ -726,13 +825,14 @@ window.onload = async () => {
   // populateSIPDropdown();
   // generateSIPTransactions();
 
+  renderTransactionHistory();
   updateChart(currentFund);
   updateTotalChart();
 
   const originalBtn = document.getElementById('originalModeBtn');
   const focusBtn = document.getElementById('focusModeBtn');
 
-  // Add event listeners
+  // Add event listeners for chart mode buttons
   originalBtn.addEventListener('click', () => {
     if (totalChartMode !== 'original') {
       totalChartMode = 'original';
@@ -751,7 +851,7 @@ window.onload = async () => {
     }
   });
 
-  // Set initial button selected state based on totalChartMode
+  // Set initial button state
   if (totalChartMode === 'focus') {
     originalBtn.classList.remove('selected');
     focusBtn.classList.add('selected');
