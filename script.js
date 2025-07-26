@@ -59,34 +59,12 @@ async function loadAllNAVs() {
   updateTotalChart();
 }
 
-const roundHalfDownTwoDecimals = (v) => roundHalfDown(v, 2);
-
 function formatIndianCurrency(amount, decimals = 2) {
   return amount.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
 function formatNAVValue(nav) {
   return nav.toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
-}
-
-// Custom rounding function to round number to "decimals" places
-// but if digit after decimal is exactly 5 (and no further digits), round down
-function roundHalfDown(value, decimals = 1) {
-  const factor = Math.pow(10, decimals);
-  const scaled = value * factor;
-  const floorVal = Math.floor(scaled);
-  const diff = scaled - floorVal;
-
-  // Use a small epsilon for floating point tolerance
-  const epsilon = Number.EPSILON * 10;
-
-  if (Math.abs(diff - 0.5) < epsilon) {
-    // Exactly .5 fractional part - round down
-    return floorVal / factor;
-  } else {
-    // Otherwise normal rounding
-    return Math.round(scaled) / factor;
-  }
 }
 
 // --- LOGIN HANDLER ---
@@ -199,8 +177,8 @@ function updateChart(fundKey) {
   const finalValue = finalValues.length ? finalValues[finalValues.length - 1] : 0;
   const latestInvestedAmount = investedAmountsByDate.length ? investedAmountsByDate[investedAmountsByDate.length - 1] : 0;
 
-  investedAmountSpan.textContent = formatIndianCurrency(roundHalfDown(latestInvestedAmount, 1), 1);
-  finalValueSpan.textContent = formatIndianCurrency(roundHalfDown(finalValue, 1), 1);
+  investedAmountSpan.textContent = formatIndianCurrency(latestInvestedAmount, 1);
+  finalValueSpan.textContent = formatIndianCurrency(finalValue, 1);
   latestNavSpan.textContent = formatNAVValue(latestNAV);
   lastUpdatedLabel.textContent = dates.length ? `Last updated on: ${dates[dates.length - 1]}` : "Last updated on: --";
 
@@ -442,7 +420,7 @@ function renderTransactionHistory() {
       <td>${tx.date}</td>
       <td>${Number(tx.units).toFixed(3)}</td>
       <td>${formatNAVValue(Number(tx.purchaseNAV))}</td>
-      <td>${formatIndianCurrency(roundHalfDown(Number(tx.investedAmount), 1))}</td>
+      <td>${formatIndianCurrency(Number(tx.investedAmount))}</td>
       <td><button class="remove-btn" data-index="${i}">Remove</button></td>
     `;
     transactionHistoryBody.appendChild(tr);
@@ -542,7 +520,7 @@ function updateInvestedAmount() {
   const nav = parseFloat(purchaseNAVInput.value);
   const units = parseFloat(unitsInput.value);
   if (nav > 0 && units > 0) {
-    investedAmtInput.value = roundHalfDownTwoDecimals(nav * units).toFixed(2);
+    investedAmtInput.value = (nav * units).toFixed(2);
   } else {
     investedAmtInput.value = '';
   }
@@ -676,8 +654,8 @@ function updateTotalChart() {
     }
   }
 
-  document.getElementById('totalInvestedAmount').textContent = formatIndianCurrency(roundHalfDown(lastKnownInvestedAmount, 0), 0);
-  document.getElementById('totalFinalValue').textContent = formatIndianCurrency(roundHalfDown(lastKnownPortfolioValue, 0), 0);
+  document.getElementById('totalInvestedAmount').textContent = formatIndianCurrency(lastKnownInvestedAmount, 0);
+  document.getElementById('totalFinalValue').textContent = formatIndianCurrency(lastKnownPortfolioValue, 0);
   // === LAST KNOWN VALUE LOGIC END ===
 
   // Remove last date if not all funds have a NAV for it
