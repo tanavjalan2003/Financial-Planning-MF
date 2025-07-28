@@ -59,9 +59,7 @@ function parseNAVAllText(text) {
     const mm = monthMap[mmRaw] || mmRaw.padStart(2, '0');
 
     const dateISO = `${yyyy}-${mm}-${dd.padStart(2,'0')}`;
-
-    const roundedNav = Number(nav.toFixed(3));
-    navsByFund[fundKey][dateISO] = roundedNav;
+    navsByFund[fundKey][dateISO] = nav;  // full precision float, no rounding here
   });
 
   return navsByFund;
@@ -100,9 +98,9 @@ function parseNAVAllText(text) {
 
       // Write merged data back to JSON file
       // Round all merged NAV values to 3 decimals before writing
-      for (const date in mergedNavs) {
-        mergedNavs[date] = Number(mergedNavs[date].toFixed(3));
-      }
+      //for (const date in mergedNavs) {
+        //mergedNavs[date] = Number(mergedNavs[date].toFixed(3));
+      //}
       
       fs.writeFileSync(filePath, JSON.stringify(mergedNavs, null, 2));
       console.log(`Updated NAV JSON for ${fundKey}: ${fileName}`);
