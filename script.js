@@ -785,7 +785,7 @@ function updateTotalChart() {
     const lastDate = dates[dates.length - 1];
     const latestNav = navs[lastDate];
     const latestValue = latestNav * units;
-    const gain = latestValue - invested;
+    const gain = Math.round(latestValue - invested);
     const percent = invested > 0 ? (gain / invested) * 100 : 0;
     const fundObj = { key, name: fundData[key].scheme, invested, value: latestValue, gain, percent };
     if (gain >= 0) fundsInProfit.push(fundObj);
