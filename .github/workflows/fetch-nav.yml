@@ -2,7 +2,7 @@ name: Fetch, Process NAV Data Every 12 Hours
 
 on:
   schedule:
-    - cron: '0 8,20 * * *'  # every 12 hours (UTC)
+    - cron: '0 7,19 * * *'  # every 12 hours (UTC)
   workflow_dispatch:
 
 jobs:
