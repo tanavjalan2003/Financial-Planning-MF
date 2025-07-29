@@ -780,17 +780,22 @@ function updateTotalChart() {
     if (!txs.length) continue;
     const dates = Object.keys(navs).sort();
     if (!dates.length) continue;
+  
     const invested = txs.reduce((sum, tx) => sum + Number(tx.investedAmount), 0);
     const units = txs.reduce((sum, tx) => sum + Number(tx.units), 0);
     const lastDate = dates[dates.length - 1];
     const latestNav = navs[lastDate];
     const latestValue = latestNav * units;
+  
+    // Round gain for calculation & display
     const gain = Math.round(latestValue - invested);
     const percent = invested > 0 ? (gain / invested) * 100 : 0;
+  
     const fundObj = { key, name: fundData[key].scheme, invested, value: latestValue, gain, percent };
     if (gain >= 0) fundsInProfit.push(fundObj);
     else fundsInLoss.push(fundObj);
   }
+
   // Sorting for highest profit and loss
   fundsInProfit.sort((a, b) => b.gain - a.gain);
   fundsInLoss.sort((a, b) => a.gain - b.gain);
