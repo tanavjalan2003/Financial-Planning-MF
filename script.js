@@ -692,7 +692,15 @@ function updateTotalChart() {
   } else {
     document.getElementById('totalLastUpdated').textContent = `Last updated on: Latest for each fund`;
   }
-  const chartLabels = [...allDates, lastSnapshotLabel];
+  let chartLabels = [...allDates];
+  // Append lastSnapshotLabel only if it's not already the last date in allDates
+  if (lastSnapshotLabel && lastSnapshotLabel !== "Latest") {
+    if (chartLabels[chartLabels.length - 1] !== lastSnapshotLabel) {
+      chartLabels.push(lastSnapshotLabel);
+    }
+  } else if (lastSnapshotLabel === "Latest") {
+    chartLabels.push(lastSnapshotLabel);
+  }
   const investedAmountsWithLatest = [...investedAmountsByDate, lastKnownInvestedAmount];
   const roundedLastKnownPortfolioValue = Number(lastKnownPortfolioValue.toFixed(2));
   const finalValuesWithLatest = [...finalValuesByDate, roundedLastKnownPortfolioValue];
