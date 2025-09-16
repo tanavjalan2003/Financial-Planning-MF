@@ -19,7 +19,8 @@ jobs:
           node-version: '18'
 
       - name: Download NAVAll.txt
-        run: curl -o navData.txt https://www.amfiindia.com/spages/NAVAll.txt
+        run: curl -L -o navData.txt https://www.amfiindia.com/spages/NAVAll.txt
+
 
       - name: Show last 20 lines of NAVAll.txt
         run: |
