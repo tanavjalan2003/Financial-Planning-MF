@@ -31,7 +31,8 @@ const monthMap = {
 };
 
 function parseNAVAllText(text) {
-  const lines = text.split('\n');
+  // Normalize line endings (\r\n or \r → \n) and split
+  const lines = text.replace(/\r/g, '').split('\n');
   const navsByFund = {};
   for (const fundKey in fundData) {
     navsByFund[fundKey] = {};
@@ -51,15 +52,22 @@ function parseNAVAllText(text) {
     const nav = parseFloat(navStr);
     if (isNaN(nav)) return;
 
-    // Parse a date string of format "dd-MMM-yyyy" or "dd-mm-yyyy"
-    const [dd, mmRaw, yyyy] = dateStrRaw.split('-');
-    if (!dd || !mmRaw || !yyyy) return;
+    // Handle both dd-MMM-yyyy and dd/mm/yyyy, trim parts
+    let [ddRaw, mmRaw, yyyyRaw] = dateStrRaw.includes('-')
+      ? dateStrRaw.split('-')
+      : dateStrRaw.split('/');
 
-    // Convert month abbreviation (e.g., "Jul") to month number or keep numeric month as is
-    const mm = monthMap[mmRaw] || mmRaw.padStart(2, '0');
+    if (!ddRaw || !mmRaw || !yyyyRaw) return;
 
-    const dateISO = `${yyyy}-${mm}-${dd.padStart(2,'0')}`;
-    navsByFund[fundKey][dateISO] = nav;  // full precision float, no rounding here
+    const dd = ddRaw.trim().padStart(2, '0');
+    const mm = (monthMap[mmRaw.trim()] || mmRaw.trim().padStart(2, '0'));
+    const yyyy = yyyyRaw.trim();
+
+    const dateISO = `${yyyy}-${mm}-${dd}`;
+
+    // Save in the simple format: { "YYYY-MM-DD": NAV }
+    navsByFund[fundKey][dateISO] = nav;
+    console.log(`Parsed ${fundKey}: ${dateISO} -> ${nav}`);
   });
 
   return navsByFund;
