@@ -19,7 +19,14 @@ jobs:
           node-version: '18'
 
       - name: Download NAVAll.txt
-        run: curl -o navData.txt https://www.amfiindia.com/spages/NAVAll.txt
+        run: curl -o NAVAll_latest.txt https://www.amfiindia.com/spages/NAVAll.txt
+
+      - name: Upload NAVAll.txt as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: NAVAll_dump
+          path: NAVAll_latest.txt
+
 
       - name: Run NAV parsing script
         run: node processNavs.js
