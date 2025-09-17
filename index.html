@@ -153,19 +153,15 @@
       </div>
 
       <!-- Dashboard Chart Section -->
-      <div class="chart-header" style="position: relative;">
-        <span id="lastUpdated" class="last-updated">Last updated on: --</span>
-        <!-- Mode toggle buttons -->
-        <div id="dashboardChartModeButtons" style="position: absolute; top: 8px; right: 120px; display: flex; gap: 8px; z-index: 10;">
-          <button id="dashboardOriginalModeBtn" class="mode-btn">Original Mode</button>
-          <button id="dashboardFocusModeBtn" class="mode-btn selected">Focus Mode</button>
+      <div class="chart-container">
+        <div class="chart-header">
+          <span id="lastUpdated" class="last-updated">Last updated on: --</span>
+          <!-- Fetch all funds NAV -->
+          <button class="fetch-button" onclick="fetchAllNAVs()">
+            Fetch All NAVs
+          </button>
         </div>
-        <!-- Fetch all funds NAV -->
-        <button class="fetch-button" onclick="fetchAllNAVs()" style="position:absolute; top:8px; right:8px;">
-          Fetch All NAVs
-        </button>
-      </div>
-      <canvas id="navChart" height="100"></canvas>
+        <canvas id="navChart" height="100"></canvas>
       </div>
     </div>
 
