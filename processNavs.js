@@ -5,12 +5,11 @@ const fundData = {
   bandhan: "147944",
   hdfc_balanced_advantage: "100119",
   hdfc_gold: "115934",
+  hdfc_nifty_50_index: "101525",
   hdfc_small: "130502",
-  icici_large_mid: "100349",
   icici_multi_asset: "101144",
   invesco_flexi_cap: "149766",
   motilal_large_mid: "147701",
-  motilal_midcap: "127039",
   tata_small_cap: "145208"
 };
 
