@@ -6,11 +6,10 @@ const fundData = {
   hdfc_balanced_advantage: { scheme: "HDFC Balanced Advantage Fund - Growth", schemeCode: "100119", investedAmount: 0, totalUnits: 0 },
   hdfc_gold: { scheme: "HDFC Gold Fund", schemeCode: "115934", investedAmount: 0, totalUnits: 0 },
   hdfc_small: { scheme: "HDFC Small Cap Fund - Growth Option", schemeCode: "130502", investedAmount: 0, totalUnits: 0 },
-  icici_large_mid: { scheme: "ICICI Prudential Large & Mid Cap Fund (G)", schemeCode: "100349", investedAmount: 0, totalUnits: 0 },
+  hdfc_nifty_50_index: { scheme: "HDFC Nifty 50 Index Fund - Growth Plan", schemeCode: "101525", investedAmount: 0, totalUnits: 0 },
   icici_multi_asset: { scheme: "ICICI Prudential Multi-Asset Fund (G)", schemeCode: "101144", investedAmount: 0, totalUnits: 0 },
   invesco_flexi_cap: { scheme: "Invesco India Flexi Cap Fund - Regular Plan (G)", schemeCode: "149766", investedAmount: 0, totalUnits: 0 },
   motilal_large_mid: { scheme: "Motilal Oswal Large and Midcap Fund - Regular Plan (G)", schemeCode: "147701", investedAmount: 0, totalUnits: 0 },
-  motilal_midcap: { scheme: "Motilal Oswal Midcap Fund - Regular Plan (G)", schemeCode: "127039", investedAmount: 0, totalUnits: 0 },
   tata_small_cap: { scheme: "Tata Small Cap Fund - Regular Plan (G)", schemeCode: "145208", investedAmount: 0, totalUnits: 0 }
 };
 
@@ -90,11 +89,10 @@ const fundColors = {
   hdfc_balanced_advantage: "#74b9ff",
   hdfc_gold: "#ffe066",
   hdfc_small: "#ffb6c1",
-  icici_large_mid: "#fab1a0",
+  hdfc_nifty_50_index: "#6c5ce7", // NEW FUND COLOR
   icici_multi_asset: "#00b894",
   invesco_flexi_cap: "#a29bfe",
   motilal_large_mid: "#e17055",
-  motilal_midcap: "#fd79a8",
   tata_small_cap: "#55efc4"
 };
 
