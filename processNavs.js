@@ -9,6 +9,7 @@ const fundData = {
   hdfc_small: "130502",
   icici_multi_asset: "101144",
   invesco_flexi_cap: "149766",
+  kotak_nifty_next_50: "148743",
   motilal_large_mid: "147701",
   tata_small_cap: "145208"
 };
