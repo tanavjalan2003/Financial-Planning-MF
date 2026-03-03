@@ -954,7 +954,7 @@ window.onload = async () => {
   populateDropdowns();
   renderTransactionHistory();  // Add to render initial transactions
   updateChart(currentFund);
-  updateTotalChart();
+  //updateTotalChart();
 
   // --- Tabs Logic ---
   const tabs = document.querySelectorAll('.tab-button');
