@@ -757,7 +757,126 @@ function updateTotalChart() {
   }
 
   // --- Keep your Funds Profit/Loss Pie section as-is below this point ---
-  // (No changes needed there)
+    // --- 3. Funds-in-Profit vs. Loss Pie ---
+  let fundsInProfit = [], fundsInLoss = [];
+
+  for (const key in fundData) {
+    const navs = getStoredNAVs(key);
+    const txs = getTransactions(key);
+    if (!txs.length) continue;
+
+    const dates = Object.keys(navs).sort().filter(d => !isWeekend(d));
+    if (!dates.length) continue;
+
+    const invested = txs.reduce((sum, tx) => sum + Number(tx.investedAmount), 0);
+    const units = txs.reduce((sum, tx) => sum + Number(tx.units), 0);
+
+    const lastDate = dates[dates.length - 1];
+    const latestNav = navs[lastDate];
+    if (latestNav == null) continue;
+
+    const latestValue = latestNav * units;
+
+    const gain = Math.round(latestValue - invested);
+    const percent = invested > 0 ? (gain / invested) * 100 : 0;
+
+    const fundObj = { key, name: fundData[key].scheme, invested, value: latestValue, gain, percent };
+
+    if (gain >= 0) fundsInProfit.push(fundObj);
+    else fundsInLoss.push(fundObj);
+  }
+
+  // Sorting for highest profit and loss
+  fundsInProfit.sort((a, b) => b.gain - a.gain);
+  fundsInLoss.sort((a, b) => a.gain - b.gain);
+
+  const numFundsProfit = fundsInProfit.length;
+  const numFundsLoss = fundsInLoss.length;
+  const numFundsTotal = numFundsProfit + numFundsLoss;
+
+  const profitNames = fundsInProfit.map(f => f.name).join(', ') || "None";
+  const lossNames   = fundsInLoss.map(f => f.name).join(', ') || "None";
+
+  const totalProfitAmount = fundsInProfit.reduce((sum, f) => sum + f.gain, 0);
+  const totalProfitInvested = fundsInProfit.reduce((sum, f) => sum + f.invested, 0);
+  const totalProfitPercent = totalProfitInvested ? (totalProfitAmount / totalProfitInvested) * 100 : 0;
+
+  const totalLossAmount = fundsInLoss.reduce((sum, f) => sum + f.gain, 0);
+  const totalLossInvested = fundsInLoss.reduce((sum, f) => sum + f.invested, 0);
+  const totalLossPercent = totalLossInvested ? (totalLossAmount / totalLossInvested) * 100 : 0;
+
+  const hiProfit = fundsInProfit[0];
+  const hiLoss = fundsInLoss[0];
+
+  // Fill the HTML (guard: elements might not exist in some tabs)
+  const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  const setHTML = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };
+
+  setText('fundsInProfit', numFundsProfit);
+  setText('fundsInLoss', numFundsLoss);
+  setText('numFundsProfit', numFundsProfit);
+  setText('numFundsLoss', numFundsLoss);
+  setText('numFundsTotal', numFundsTotal);
+  setText('numFundsTotalB', numFundsTotal);
+
+  setText('totalProfitAmount', formatIndianCurrency(totalProfitAmount));
+  setHTML('totalProfitPercent', `<span style="color:#00b894;font-weight:bold;">${(totalProfitPercent >= 0 ? "+" : "") + totalProfitPercent.toFixed(2)}%</span>`);
+
+  setHTML('totalLossPercent', `<span style="color:#d63031;font-weight:bold;">${(totalLossPercent >= 0 ? "+" : "") + totalLossPercent.toFixed(2)}%</span>`);
+  setText('totalLossAmount', formatIndianCurrency(totalLossAmount));
+
+  setText('highestProfitName', hiProfit ? hiProfit.name + " " : "-");
+  setText('highestProfitAmount', hiProfit ? "+" + formatIndianCurrency(hiProfit.gain) : "-");
+  setText('highestProfitPercent', hiProfit ? hiProfit.percent.toFixed(2) + "%" : "-");
+
+  setText('highestLossName', hiLoss ? hiLoss.name + " " : "-");
+  setText('highestLossAmount', hiLoss ? formatIndianCurrency(hiLoss.gain) : "-");
+  setText('highestLossPercent', hiLoss ? hiLoss.percent.toFixed(2) + "%" : "-");
+
+  // Draw pie chart (only if canvas exists)
+  const pieCanvas = document.getElementById('profitLossPie');
+  if (pieCanvas) {
+    const profitLossPieCtx = pieCanvas.getContext('2d');
+
+    if (window.profitLossPieChart && typeof window.profitLossPieChart.destroy === "function") {
+      window.profitLossPieChart.destroy();
+    }
+
+    const pieLabels = [
+      `Profit: ${numFundsProfit} (${profitNames})`,
+      `Loss: ${numFundsLoss} (${lossNames})`
+    ];
+
+    window.profitLossPieChart = new Chart(profitLossPieCtx, {
+      type: 'pie',
+      data: {
+        labels: pieLabels,
+        datasets: [{
+          data: [numFundsProfit, numFundsLoss],
+          backgroundColor: ['#00b894', '#d63031']
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                if (context.dataIndex === 0 && fundsInProfit.length > 0) {
+                  return ['Profit:', ...fundsInProfit.map(f => '• ' + f.name)];
+                }
+                if (context.dataIndex === 1 && fundsInLoss.length > 0) {
+                  return ['Loss:', ...fundsInLoss.map(f => '• ' + f.name)];
+                }
+                return '';
+              }
+            }
+          }
+        }
+      }
+    });
+  }
 
   console.log('updateTotalChart');
   console.log('Chart labels:', chartLabels);
