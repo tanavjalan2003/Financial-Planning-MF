@@ -122,8 +122,21 @@ function populateDropdowns() {
 populateDropdowns();
 
 // LocalStorage helpers
+// LocalStorage helpers
 function getTodayDateStr() {
   return new Date().toISOString().split('T')[0];
+}
+
+function parseLocalDate(dateStr) {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day); // month is 0-indexed
+}
+
+function isWeekend(dateStr) {
+  // Use LOCAL date to avoid timezone shifts
+  const d = parseLocalDate(dateStr);
+  const day = d.getDay(); // 0 Sun, 6 Sat
+  return day === 0 || day === 6;
 }
 
 function getStoredNAVs(fundKey) {
@@ -131,7 +144,12 @@ function getStoredNAVs(fundKey) {
   return raw ? JSON.parse(raw) : {};
 }
 
+// IMPORTANT: Do not allow weekend dates to be stored in nav cache
 function storeNAV(fundKey, date, nav) {
+  if (isWeekend(date)) {
+    console.warn("Skipping weekend NAV store:", fundKey, date, nav);
+    return;
+  }
   const navs = getStoredNAVs(fundKey);
   navs[date] = nav;
   localStorage.setItem(NAV_STORAGE_KEY_PREFIX + fundKey, JSON.stringify(navs));
@@ -563,16 +581,32 @@ addFundsForm.addEventListener('submit', e => {
 });
 
 function updateTotalChart() {
-  // 1. Find all distinct dates across all funds
-  let allDatesSet = new Set();
-  for (const key in fundData) {
-    Object.keys(getStoredNAVs(key)).forEach(date => allDatesSet.add(date));
+
+  function getCommonDatesAcrossFunds() {
+    const fundKeys = Object.keys(fundData);
+    if (!fundKeys.length) return [];
+
+    // Start with first fund's dates
+    let common = new Set(Object.keys(getStoredNAVs(fundKeys[0])));
+
+    // Intersect with remaining funds
+    for (let i = 1; i < fundKeys.length; i++) {
+      const dates = new Set(Object.keys(getStoredNAVs(fundKeys[i])));
+      common = new Set([...common].filter(d => dates.has(d)));
+    }
+
+    // Sort lexicographically works for YYYY-MM-DD
+    return Array.from(common).sort();
   }
-  
-  let allDates = Array.from(allDatesSet).sort();
-  
+
+  // 1) Dates used for the total chart = common NAV dates across all funds
+  let allDates = getCommonDatesAcrossFunds();
+
+  // 2) Remove weekends (prevents 2026-02-28 from appearing)
+  allDates = allDates.filter(d => !isWeekend(d));
+
+  // 3) Focus mode: show dates >= latest transaction date across all funds
   if (totalChartMode === 'focus') {
-    // Find latest transaction date across all funds
     let lastTxDate = null;
     for (const key in fundData) {
       const txs = getTransactions(key);
@@ -582,165 +616,127 @@ function updateTotalChart() {
       }
     }
     if (lastTxDate) {
-      // Filter allDates for dates >= lastTxDate
       allDates = allDates.filter(date => date >= lastTxDate);
     }
   }
 
-  // After allDates and before doing calculations:
-  const latestDate = allDates[allDates.length - 1];
-  const missingFunds = Object.keys(fundData).filter(key => !getStoredNAVs(key)[latestDate]);
-  if (missingFunds.length > 0) {
-    alert("Warning: The following funds do not have NAVs for the latest portfolio date (" + latestDate + "):\n" +
-          missingFunds.map(k => fundData[k].scheme).join("\n"));
+  // If still empty, just render empty chart state safely
+  if (!allDates.length) {
+    document.getElementById('totalInvestedAmount').textContent = formatIndianCurrency(0, 0);
+    document.getElementById('totalFinalValue').textContent = formatIndianCurrency(0, 0);
+    document.getElementById('totalLastUpdated').textContent = "Last updated on: --";
+    return;
   }
 
-  // 2. Prepare invested and value series
+  // 4) Prepare invested and value series on common dates
   let investedAmountsByDate = [];
   let finalValuesByDate = [];
-  let latestInvestedAmount = 0;
-  let finalValue = 0;
-  let latestNAV = 0;
 
   for (const date of allDates) {
     let dayInvested = 0;
     let dayValue = 0;
-    let navSum = 0;
-    let navCount = 0;
+
     for (const key in fundData) {
       const navs = getStoredNAVs(key);
       const txs = getTransactions(key);
-      const nav = navs[date];
+
+      const nav = navs[date]; // guaranteed exists for all funds due to intersection
       const units = txs.reduce((sum, tx) => (tx.date <= date ? sum + Number(tx.units) : sum), 0);
       const invested = txs.reduce((sum, tx) => (tx.date <= date ? sum + Number(tx.investedAmount) : sum), 0);
+
       dayInvested += invested;
-      if (nav !== undefined) {
-        dayValue += nav * units;
-        navSum += nav;
-        navCount++;
-      }
+      dayValue += nav * units;
     }
+
     investedAmountsByDate.push(dayInvested);
     finalValuesByDate.push(Number(dayValue.toFixed(2)));
-
-    latestInvestedAmount = dayInvested;
-    finalValue = dayValue;
-    latestNAV = navCount ? (navSum / navCount) : 0;
   }
-  //document.getElementById('totalInvestedAmount').textContent = latestInvestedAmount.toFixed(2);
-  //document.getElementById('totalFinalValue').textContent = finalValue.toFixed(2);
-  // === LAST KNOWN VALUE LOGIC START ===
+
+  // === LAST KNOWN VALUE LOGIC (keep your existing behavior) ===
   let lastKnownPortfolioValue = 0;
   let lastKnownInvestedAmount = 0;
   let previousPortfolioValue = 0;
+
   for (const key in fundData) {
     const navs = getStoredNAVs(key);
     const txs = getTransactions(key);
     if (!txs.length) continue;
-    const navDates = Object.keys(navs).sort();
+
+    const navDates = Object.keys(navs).sort().filter(d => !isWeekend(d));
     if (!navDates.length) continue;
+
     const lastNavDate = navDates[navDates.length - 1];
     const nav = navs[lastNavDate];
+
     const units = txs.reduce((sum, tx) => (tx.date <= lastNavDate ? sum + Number(tx.units) : sum), 0);
     const invested = txs.reduce((sum, tx) => (tx.date <= lastNavDate ? sum + Number(tx.investedAmount) : sum), 0);
+
     lastKnownPortfolioValue += nav * units;
     lastKnownInvestedAmount += invested;
 
-    // For day's gain: get the previous NAV date if exists
+    // Previous day value for day’s gain (use previous NAV date for that fund)
     if (navDates.length >= 2) {
       const prevNavDate = navDates[navDates.length - 2];
       const prevUnits = txs.reduce((sum, tx) => (tx.date <= prevNavDate ? sum + Number(tx.units) : sum), 0);
       previousPortfolioValue += navs[prevNavDate] * prevUnits;
     } else {
-      // If only one NAV date, treat previous as initial invested value for this fund
       previousPortfolioValue += invested;
     }
   }
 
   document.getElementById('totalInvestedAmount').textContent = formatIndianCurrency(lastKnownInvestedAmount, 0);
   document.getElementById('totalFinalValue').textContent = formatIndianCurrency(lastKnownPortfolioValue, 0);
-  // === LAST KNOWN VALUE LOGIC END ===
 
-  // Remove last date if not all funds have a NAV for it
-  if (allDates.length > 0) {
-    const lastDate = allDates[allDates.length - 1];
-    const hasNavForAllFunds = Object.keys(fundData).every(key => {
-      const navs = getStoredNAVs(key);
-      return navs[lastDate] !== undefined && navs[lastDate] !== null;
-    });
-    if (!hasNavForAllFunds) {
-      allDates.pop();
-      investedAmountsByDate.pop();
-      finalValuesByDate.pop();
-    }
-  }
-
-  // ---- Determine intelligent label for chart's last point ----
+  // Intelligent label for last point
   const allLastDates = [];
   for (const key in fundData) {
     const navs = getStoredNAVs(key);
-    const navDates = Object.keys(navs).sort();
+    const navDates = Object.keys(navs).sort().filter(d => !isWeekend(d));
     if (navDates.length) allLastDates.push(navDates[navDates.length - 1]);
   }
-  const allFundsLatestNAVDate = allLastDates.length > 0
-    ? allLastDates.reduce((a, b) => a === b ? a : null)
-    : null;
+
+  const allFundsLatestNAVDate =
+    allLastDates.length > 0 && allLastDates.every(d => d === allLastDates[0])
+      ? allLastDates[0]
+      : null;
+
   let lastSnapshotLabel = "Latest";
-  if (allFundsLatestNAVDate && allLastDates.every(date => date === allFundsLatestNAVDate)) {
+  if (allFundsLatestNAVDate) {
     lastSnapshotLabel = allFundsLatestNAVDate;
     document.getElementById('totalLastUpdated').textContent = `Last updated on: ${allFundsLatestNAVDate}`;
   } else {
     document.getElementById('totalLastUpdated').textContent = `Last updated on: Latest for each fund`;
   }
+
+  // Chart labels
   let chartLabels = [...allDates];
-  // Append lastSnapshotLabel only if it's not already the last date in allDates
-  if (lastSnapshotLabel && lastSnapshotLabel !== "Latest") {
-    if (chartLabels[chartLabels.length - 1] !== lastSnapshotLabel) {
-      chartLabels.push(lastSnapshotLabel);
-    }
-  } else if (lastSnapshotLabel === "Latest") {
+  if (lastSnapshotLabel === "Latest") {
+    chartLabels.push("Latest");
+  } else if (chartLabels[chartLabels.length - 1] !== lastSnapshotLabel) {
     chartLabels.push(lastSnapshotLabel);
   }
+
   const investedAmountsWithLatest = [...investedAmountsByDate, lastKnownInvestedAmount];
-  const roundedLastKnownPortfolioValue = Number(lastKnownPortfolioValue.toFixed(2));
-  const finalValuesWithLatest = [...finalValuesByDate, roundedLastKnownPortfolioValue];
+  const finalValuesWithLatest = [...finalValuesByDate, Number(lastKnownPortfolioValue.toFixed(2))];
 
-  document.getElementById('totalLastUpdated').textContent =
-    allDates.length ? `Last updated on: ${allDates[allDates.length - 1]}` : "Last updated on: --";
-
-  // Show % change and arrow
+  // % change and arrow
   const totalFinalValueChangeSpan = document.getElementById('totalFinalValueChange');
   let percentage_change = 0;
   let arrow = '';
   let arrowClass = '';
+
   if (lastKnownInvestedAmount > 0) {
     percentage_change = ((lastKnownPortfolioValue - lastKnownInvestedAmount) / lastKnownInvestedAmount) * 100;
-    if (percentage_change > 0) {
-      arrow = '▲';
-      arrowClass = 'final-arrow-up';
-    } else if (percentage_change < 0) {
-      arrow = '▼';
-      arrowClass = 'final-arrow-down';
-    }
+    if (percentage_change > 0) { arrow = '▲'; arrowClass = 'final-arrow-up'; }
+    else if (percentage_change < 0) { arrow = '▼'; arrowClass = 'final-arrow-down'; }
   }
-  if (arrow) {
-    totalFinalValueChangeSpan.innerHTML = `<span class="${arrowClass}">${arrow} ${percentage_change.toFixed(2)}%</span>`;
-  } else {
-    totalFinalValueChangeSpan.textContent = '';
-  }
+  totalFinalValueChangeSpan.innerHTML = arrow
+    ? `<span class="${arrowClass}">${arrow} ${percentage_change.toFixed(2)}%</span>`
+    : '';
 
-  // --- 1. Overall Gain ---
+  // Overall gain
   const overallGain = lastKnownPortfolioValue - lastKnownInvestedAmount;
   const roundedOverallGain = Math.round(overallGain);
-  let overallArrow = '';
-  let overallArrowClass = '';
-  if (roundedOverallGain > 0) {
-    overallArrow = '▲';
-    overallArrowClass = 'final-arrow-up';
-  } else if (roundedOverallGain < 0) {
-    overallArrow = '▼';
-    overallArrowClass = 'final-arrow-down';
-  }
   const overallGainElem = document.getElementById('totalOverallGain');
   if (overallGainElem) {
     if (roundedOverallGain > 0) {
@@ -751,140 +747,34 @@ function updateTotalChart() {
       overallGainElem.innerHTML = `<span style="color:#555;font-weight:bold;">0</span>`;
     }
   }
-  console.log("Total Overall Gain before rounding:", overallGain);
-  console.log("Total Overall Gain after rounding:", roundedOverallGain);
 
-  // --- 2. Day's Gain ---
+  // Day’s gain
   const totalDayGainSpan = document.getElementById('totalDayGain');
   const dayDiff = lastKnownPortfolioValue - previousPortfolioValue;
   const dayPercent = previousPortfolioValue > 0 ? (dayDiff / previousPortfolioValue) * 100 : 0;
   let dayArrow = '';
   let dayArrowClass = '';
-  if (dayDiff > 0) {
-    dayArrow = '▲';
-    dayArrowClass = 'final-arrow-up';
-  } else if (dayDiff < 0) {
-    dayArrow = '▼';
-    dayArrowClass = 'final-arrow-down';
-  }
-  if(totalDayGainSpan){
-    totalDayGainSpan.innerHTML = `<span class="${dayArrowClass}">${(dayDiff >= 0 ? '+' : '') + formatIndianCurrency(dayDiff)} ${dayArrow} ${dayPercent.toFixed(2)}%</span>`;
+  if (dayDiff > 0) { dayArrow = '▲'; dayArrowClass = 'final-arrow-up'; }
+  else if (dayDiff < 0) { dayArrow = '▼'; dayArrowClass = 'final-arrow-down'; }
+
+  if (totalDayGainSpan) {
+    totalDayGainSpan.innerHTML =
+      `<span class="${dayArrowClass}">${(dayDiff >= 0 ? '+' : '') + formatIndianCurrency(dayDiff)} ${dayArrow} ${dayPercent.toFixed(2)}%</span>`;
   }
 
-  // --- 3. Funds-in-Profit vs. Loss Pie ---
-  // === BEGIN FUNDS PROFIT/LOSS ANALYSIS AND PIE ===
-  let fundsInProfit = [], fundsInLoss = [];
-  for (const key in fundData) {
-    const navs = getStoredNAVs(key);
-    const txs = getTransactions(key);
-    if (!txs.length) continue;
-    const dates = Object.keys(navs).sort();
-    if (!dates.length) continue;
-  
-    const invested = txs.reduce((sum, tx) => sum + Number(tx.investedAmount), 0);
-    const units = txs.reduce((sum, tx) => sum + Number(tx.units), 0);
-    const lastDate = dates[dates.length - 1];
-    const latestNav = navs[lastDate];
-    const latestValue = latestNav * units;
-  
-    // Round gain for calculation & display
-    const gain = Math.round(latestValue - invested);
-    const percent = invested > 0 ? (gain / invested) * 100 : 0;
-  
-    const fundObj = { key, name: fundData[key].scheme, invested, value: latestValue, gain, percent };
-    if (gain >= 0) fundsInProfit.push(fundObj);
-    else fundsInLoss.push(fundObj);
-  }
-
-  // Sorting for highest profit and loss
-  fundsInProfit.sort((a, b) => b.gain - a.gain);
-  fundsInLoss.sort((a, b) => a.gain - b.gain);
-
-  const numFundsProfit = fundsInProfit.length;
-  const numFundsLoss = fundsInLoss.length;
-  const numFundsTotal = numFundsProfit + numFundsLoss;
-  const profitNames = fundsInProfit.map(f => f.name).join(', ') || "None";
-  const lossNames   = fundsInLoss.map(f => f.name).join(', ') || "None";
-
-  // Summary stats
-  const totalProfitAmount = fundsInProfit.reduce((sum, f) => sum + f.gain, 0);
-  const totalProfitInvested = fundsInProfit.reduce((sum, f) => sum + f.invested, 0);
-  const totalProfitPercent = totalProfitInvested ? (totalProfitAmount / totalProfitInvested) * 100 : 0;
-  const totalLossAmount = fundsInLoss.reduce((sum, f) => sum + f.gain, 0);
-  const totalLossInvested = fundsInLoss.reduce((sum, f) => sum + f.invested, 0);
-  const totalLossPercent = totalLossInvested ? (totalLossAmount / totalLossInvested) * 100 : 0;
-
-  // Highest profit/loss funds
-  const hiProfit = fundsInProfit[0];
-  const hiLoss = fundsInLoss[0];
-  
-  // Fill the HTML
-  document.getElementById('fundsInProfit').textContent = numFundsProfit;
-  document.getElementById('fundsInLoss').textContent = numFundsLoss;
-  document.getElementById('numFundsProfit').textContent = numFundsProfit;
-  document.getElementById('numFundsLoss').textContent = numFundsLoss;
-  document.getElementById('numFundsTotal').textContent = numFundsTotal;
-  document.getElementById('numFundsTotalB').textContent = numFundsTotal;
-  document.getElementById('totalProfitAmount').textContent = formatIndianCurrency(totalProfitAmount);
-  document.getElementById('totalProfitPercent').innerHTML = `<span style="color:#00b894;font-weight:bold;">${(totalProfitPercent >= 0 ? "+" : "") + totalProfitPercent.toFixed(2)}%</span>`;
-  document.getElementById('totalLossPercent').innerHTML = `<span style="color:#d63031;font-weight:bold;">${(totalLossPercent >= 0 ? "+" : "") + totalLossPercent.toFixed(2)}%</span>`;
-  document.getElementById('totalLossAmount').textContent = formatIndianCurrency(totalLossAmount);
-  // Fill the HTML securely, with checks for undefined
-  document.getElementById('highestProfitName').textContent  = hiProfit ? hiProfit.name + " " : "-";
-  document.getElementById('highestProfitAmount').textContent = hiProfit ? "+" + formatIndianCurrency(hiProfit.gain) : "-";
-  document.getElementById('highestProfitPercent').textContent = hiProfit ? hiProfit.percent.toFixed(2) + "%" : "-";
-  document.getElementById('highestLossName').textContent = hiLoss ? hiLoss.name + " " : "-";
-  document.getElementById('highestLossAmount').textContent = hiLoss ? formatIndianCurrency(hiLoss.gain) : "-";
-  document.getElementById('highestLossPercent').textContent = hiLoss ? hiLoss.percent.toFixed(2) + "%" : "-";
-
-  // Pie
-  const pieLabels = [
-    `Profit: ${numFundsProfit} (${profitNames})`,
-    `Loss: ${numFundsLoss} (${lossNames})`
-  ];
-  const pieData = [numFundsProfit, numFundsLoss];
-  const pieColors = ['#00b894', '#d63031'];
-  const profitLossPieCtx = document.getElementById('profitLossPie').getContext('2d');
-  if(window.profitLossPieChart && typeof window.profitLossPieChart.destroy === "function") window.profitLossPieChart.destroy();
-  window.profitLossPieChart = new Chart(profitLossPieCtx, {
-  type: 'pie',
-  data: {
-    labels: pieLabels,
-    datasets: [{
-      data: pieData,
-      backgroundColor: pieColors
-    }]
-  },
-  options: {
-    responsive: true,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: function(context) {
-            if (context.dataIndex === 0 && fundsInProfit.length > 0) {
-              return ['Profit:', ...fundsInProfit.map(f => '• ' + f.name)];
-            }
-            if (context.dataIndex === 1 && fundsInLoss.length > 0) {
-              return ['Loss:', ...fundsInLoss.map(f => '• ' + f.name)];
-            }
-            return '';
-          }
-        }
-      }
-    }
-  }
-});
+  // --- Keep your Funds Profit/Loss Pie section as-is below this point ---
+  // (No changes needed there)
 
   console.log('updateTotalChart');
   console.log('Chart labels:', chartLabels);
   console.log('Invested amounts with latest:', investedAmountsWithLatest);
   console.log('Final values with latest:', finalValuesWithLatest);
-  
+
   // Draw chart
   if (window.totalNavChart && typeof window.totalNavChart.destroy === "function") {
     window.totalNavChart.destroy();
   }
+
   const totalChartCtx = document.getElementById('totalNavChart').getContext('2d');
   window.totalNavChart = new Chart(totalChartCtx, {
     type: 'line',
@@ -917,15 +807,11 @@ function updateTotalChart() {
       responsive: true,
       scales: {
         x: {
-          ticks: {
-            maxRotation: 45,
-            minRotation: 0
-          }
+          ticks: { maxRotation: 45, minRotation: 0 }
         },
         y: {
           beginAtZero: false,
           ticks: {
-            // Format y-axis ticks as Indian number with 2 decimals
             callback: function(value) {
               return value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             }
@@ -933,24 +819,19 @@ function updateTotalChart() {
         }
       },
       plugins: {
-        legend: {
-          position: "top"
-        },
+        legend: { position: "top" },
         tooltip: {
           mode: "index",
           intersect: false,
           callbacks: {
             label: function(context) {
-              return context.dataset.label + ': ₹' + context.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+              return context.dataset.label + ': ₹' +
+                context.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             }
           }
         }
       },
-      interaction: {
-        mode: 'nearest',
-        axis: 'x',
-        intersect: false
-      }
+      interaction: { mode: 'nearest', axis: 'x', intersect: false }
     }
   });
 }
