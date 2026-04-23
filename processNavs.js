@@ -1,121 +1,103 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
-const fundData = {
-  bandhan: "147944",
-  hdfc_balanced_advantage: "100119",
-  hdfc_gold: "115934",
-  hdfc_nifty_50_index: "101525",
-  hdfc_small: "130502",
-  icici_multi_asset: "101144",
-  invesco_flexi_cap: "149766",
-  kotak_nifty_next_50: "148743",
-  motilal_large_mid: "147701",
-  tata_small_cap: "145208"
-};
-
-// Map for converting month abbreviations to two-digit month numbers
+// AMFI month mapping
 const monthMap = {
-  Jan: '01',
-  Feb: '02',
-  Mar: '03',
-  Apr: '04',
-  May: '05',
-  Jun: '06',
-  Jul: '07',
-  Aug: '08',
-  Sep: '09',
-  Oct: '10',
-  Nov: '11',
-  Dec: '12'
+  Jan: "01", Feb: "02", Mar: "03", Apr: "04",
+  May: "05", Jun: "06", Jul: "07", Aug: "08",
+  Sep: "09", Oct: "10", Nov: "11", Dec: "12"
 };
 
+/**
+ * Parse AMFI NAVAll.txt
+ * Builds:
+ * 1. fundRegistry (schemeCode → fundName)
+ * 2. navData (schemeCode → {date → nav})
+ */
 function parseNAVAllText(text) {
-  // Normalize line endings (\r\n or \r → \n) and split
-  const lines = text.replace(/\r/g, '').split('\n');
-  const navsByFund = {};
-  for (const fundKey in fundData) {
-    navsByFund[fundKey] = {};
-  }
+  const lines = text.replace(/\r/g, "").split("\n");
 
-  lines.forEach(line => {
-    const parts = line.split(';');
-    if (parts.length < 6) return;
+  const fundRegistry = {};
+  const navData = {};
+
+  for (const line of lines) {
+    const parts = line.split(";");
+
+    // AMFI format sanity check
+    if (parts.length < 6) continue;
 
     const schemeCode = parts[0].trim();
+    const fundName = parts[1].trim();
     const navStr = parts[4].trim();
     const dateStrRaw = parts[5].trim();
 
-    const fundKey = Object.keys(fundData).find(k => fundData[k] === schemeCode);
-    if (!fundKey) return;
-
     const nav = parseFloat(navStr);
-    if (isNaN(nav)) return;
+    if (isNaN(nav)) continue;
 
-    // Handle both dd-MMM-yyyy and dd/mm/yyyy, trim parts
-    let [ddRaw, mmRaw, yyyyRaw] = dateStrRaw.includes('-')
-      ? dateStrRaw.split('-')
-      : dateStrRaw.split('/');
+    // Register fund dynamically
+    if (!fundRegistry[schemeCode]) {
+      fundRegistry[schemeCode] = fundName;
+    }
 
-    if (!ddRaw || !mmRaw || !yyyyRaw) return;
+    // Parse date
+    let [ddRaw, mmRaw, yyyyRaw] = dateStrRaw.includes("-")
+      ? dateStrRaw.split("-")
+      : dateStrRaw.split("/");
 
-    const dd = ddRaw.trim().padStart(2, '0');
-    const mm = (monthMap[mmRaw.trim()] || mmRaw.trim().padStart(2, '0'));
+    if (!ddRaw || !mmRaw || !yyyyRaw) continue;
+
+    const dd = ddRaw.trim().padStart(2, "0");
+    const mm = (monthMap[mmRaw.trim()] || mmRaw.trim().padStart(2, "0"));
     const yyyy = yyyyRaw.trim();
 
     const dateISO = `${yyyy}-${mm}-${dd}`;
 
-    // Save in the simple format: { "YYYY-MM-DD": NAV }
-    navsByFund[fundKey][dateISO] = nav;
-    console.log(`Parsed ${fundKey}: ${dateISO} -> ${nav}`);
-  });
+    // Initialize fund bucket if not exists
+    if (!navData[schemeCode]) {
+      navData[schemeCode] = {};
+    }
 
-  return navsByFund;
+    // Store NAV
+    navData[schemeCode][dateISO] = nav;
+
+    console.log(`${schemeCode} → ${dateISO} = ${nav}`);
+  }
+
+  return { fundRegistry, navData };
 }
 
 (async () => {
   try {
-    const navDataPath = path.join(__dirname, 'navData.txt');
+    const navDataPath = path.join(__dirname, "navData.txt");
+
     if (!fs.existsSync(navDataPath)) {
-      console.error('navData.txt not found. Please download it first.');
+      console.error("navData.txt not found.");
       process.exit(1);
     }
 
-    // Read new NAV data from the latest NAVAll.txt
-    const text = fs.readFileSync(navDataPath, 'utf8');
-    const newNavsByFund = parseNAVAllText(text);
+    const text = fs.readFileSync(navDataPath, "utf8");
+    const { fundRegistry, navData } = parseNAVAllText(text);
 
-    for (const fundKey in newNavsByFund) {
-      const fileName = `navs_${fundKey}.json`;
-      const filePath = path.join(__dirname, fileName);
+    // OUTPUT FILES
+    const registryPath = path.join(__dirname, "fund_registry.json");
+    const historyPath = path.join(__dirname, "funds_history.json");
 
-      // Read existing NAV JSON if exists
-      let existingNavs = {};
-      if (fs.existsSync(filePath)) {
-        try {
-          const existingData = fs.readFileSync(filePath, 'utf8');
-          existingNavs = JSON.parse(existingData);
-        } catch (err) {
-          console.warn(`Warning: Could not parse existing ${fileName}, overwriting it.`);
-          existingNavs = {};
-        }
-      }
+    // Save fund registry (schemeCode → name)
+    fs.writeFileSync(
+      registryPath,
+      JSON.stringify(fundRegistry, null, 2)
+    );
 
-      // Merge new NAV data into existing NAVs (overwrites by date if conflict)
-      const mergedNavs = { ...existingNavs, ...newNavsByFund[fundKey] };
+    // Save NAV history (schemeCode → {date → nav})
+    fs.writeFileSync(
+      historyPath,
+      JSON.stringify(navData, null, 2)
+    );
 
-      // Write merged data back to JSON file
-      // Round all merged NAV values to 3 decimals before writing
-      //for (const date in mergedNavs) {
-        //mergedNavs[date] = Number(mergedNavs[date].toFixed(3));
-      //}
-      
-      fs.writeFileSync(filePath, JSON.stringify(mergedNavs, null, 2));
-      console.log(`Updated NAV JSON for ${fundKey}: ${fileName}`);
-    }
-
-    console.log('NAV parsing and JSON files update complete.');
+    console.log("✅ Fund registry saved:", registryPath);
+    console.log("✅ NAV history saved:", historyPath);
+    console.log("🚀 AMFI processing complete.");
   } catch (err) {
-    console.error('Error processing NAV data:', err);
+    console.error("Error processing NAV data:", err);
   }
 })();
