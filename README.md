@@ -11,24 +11,18 @@ Built as a **fully static web application**, it is deployed via GitHub Pages wit
 ---
 
 ## 📌 Table of Contents
-- [✨ Features](#-features)
-  - [📈 Portfolio Analytics](#-portfolio-analytics)
-  - [💰 Profit & Loss Insights](#-profit--loss-insights)
-  - [📊 Interactive Dashboard](#-interactive-dashboard)
-  - [⚙️ Automated Data Pipeline](#-automated-data-pipeline)
-- [🧠 Key Capabilities](#-key-capabilities)
-- [🛠️ Technologies Used](#-technologies-used)
-- [📂 Project Structure](#-project-structure)
-- [🌐 Live Demo](#-live-demo)
-- [⚙️ Setup Instructions](#-setup-instructions)
-  - [Clone the Repository](#1-clone-the-repository)
-  - [Run Locally](#2-run-locally)
-- [🔄 Data Pipeline (Automation)](#-data-pipeline-automation)
-- [📊 How It Works](#-how-it-works)
-- [🎯 Use Cases](#-use-cases)
-- [🔮 Future Improvements](#-future-improvements)
-- [🙌 Acknowledgments](#-acknowledgments)
-- [📬 Contact](#-contact)
+- [Features](#-features)
+- [Key Capabilities](#-key-capabilities)
+- [Technologies Used](#-technologies-used)
+- [Project Structure](#-project-structure)
+- [Live Demo](#-live-demo)
+- [Setup Instructions](#-setup-instructions)
+- [Data Pipeline (Automation)](#-data-pipeline-automation)
+- [How It Works](#-how-it-works)
+- [Use Cases](#-use-cases)
+- [Future Improvements](#-future-improvements)
+- [Acknowledgments](#-acknowledgments)
+- [Contact](#-contact)
 
 ## ✨ Features  
 
